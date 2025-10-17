@@ -453,7 +453,9 @@ const templates = {
         }
 
         function showAlert(message, type) {
-            const alertHtml = \`<div class="alert alert-\${type}">\${message}</div>\`;
+            // Escape HTML to prevent XSS
+            const escapedMessage = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const alertHtml = \`<div class="alert alert-\${type}">\${escapedMessage}</div>\`;
             const alertContainer = document.createElement('div');
             alertContainer.innerHTML = alertHtml;
             document.body.appendChild(alertContainer);
@@ -558,11 +560,11 @@ const templates = {
                         <p><strong>Role:</strong> <%= user.role %></p>
                         <div class="user-actions">
                             <button class="btn btn-warning" 
-                                    onclick="editUser({_id: '<%= user._id %>', name: '<%= user.name %>', email: '<%= user.email %>', age: <%= user.age %>, role: '<%= user.role %>'})">
+                                    onclick="editUser({_id: '<%- user._id %>', name: '<%- user.name.replace(/'/g, '\\\'') %>', email: '<%- user.email.replace(/'/g, '\\\'') %>', age: <%- user.age %>, role: '<%- user.role.replace(/'/g, '\\\'') %>'})">
                                 Edit
                             </button>
                             <button class="btn btn-danger" 
-                                    onclick="deleteUser('<%= user._id %>', '<%= user.name %>')">
+                                    onclick="deleteUser('<%- user._id %>', '<%- user.name.replace(/'/g, '\\\'') %>')">
                                 Delete
                             </button>
                         </div>
@@ -778,7 +780,7 @@ app.post('/users', async (req, res) => {
       }
 
       const newUser = {
-        _id: Date.now().toString(),
+        _id: 'demo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         name,
         email,
         age: parseInt(age),
