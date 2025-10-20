@@ -30,21 +30,24 @@ let demoMode = false;
 let demoUsers = [
     {
         _id: '507f1f77bcf86cd799439011',
-        name: 'John Doe',
+        name: 'admin',
         password: 'hashed_password_1',
-        createdAt: new Date('2023-01-15')
+        createdAt: new Date('2023-01-15'),
+        roles: [{ role: 'root', db: 'admin' }]
     },
     {
         _id: '507f1f77bcf86cd799439012',
         name: 'Jane Smith',
         password: 'hashed_password_2',
-        createdAt: new Date('2023-02-20')
+        createdAt: new Date('2023-02-20'),
+        roles: [{ role: 'readWrite', db: 'admin' }]
     },
     {
         _id: '507f1f77bcf86cd799439013',
         name: 'Bob Johnson',
         password: 'hashed_password_3',
-        createdAt: new Date('2023-03-10')
+        createdAt: new Date('2023-03-10'),
+        roles: [{ role: 'read', db: 'admin' }]
     }
 ];
 
@@ -251,10 +254,78 @@ app.delete('/users/delete', async (req, res) => {
             return res.status(400).json({ error: 'User ID is required' });
         }
 
+        const userName = id.split('.')[1];
+
+        if (demoMode) {
+            // Demo mode validations
+            const userToDelete = demoUsers.find(user => user.name === userName);
+            const remainingUsers = demoUsers.filter(user => user.name !== userName);
+            
+            if (remainingUsers.length === 0) {
+                return res.status(400).json({ error: 'Cannot delete the last user. At least one user must remain to access the database.' });
+            }
+            
+            // Check if user has root role or critical administrative roles
+            if (userToDelete?.roles?.some(role => 
+                role.role === 'root' || 
+                role.role === 'userAdminAnyDatabase' ||
+                role.role === 'dbAdminAnyDatabase' ||
+                role.role === 'clusterAdmin'
+            )) {
+                return res.status(400).json({ error: 'Root users and users with administrative privileges cannot be deleted for security reasons.' });
+            }
+            
+            return res.json({ success: true, message: 'User deleted successfully (demo mode)' });
+        }
+
+        // Real MongoDB validations
+        // First, get all users to count them
+        const allUsersResult = await db.command({
+            usersInfo: 1,
+            showCredentials: false,
+            showCustomData: false,
+            showPrivileges: false,
+            showAuthenticationRestrictions: false,
+            filter: {}
+        });
+
+        const totalUsers = allUsersResult.users.length;
+        
+        // Prevent deleting the last user
+        if (totalUsers <= 1) {
+            return res.status(400).json({ error: 'Cannot delete the last user. At least one user must remain to access the database.' });
+        }
+
+        // Get detailed user info including roles to check for root privileges
+        const userDetailsResult = await db.command({
+            usersInfo: { user: userName, db: db.databaseName },
+            showCredentials: false,
+            showCustomData: false,
+            showPrivileges: false,
+            showAuthenticationRestrictions: false
+        });
+
+        if (userDetailsResult.users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const userToDelete = userDetailsResult.users[0];
+        
+        // Check if user has root role or other critical administrative roles
+        const hasRootRole = userToDelete.roles?.some(role => 
+            role.role === 'root' || 
+            role.role === 'userAdminAnyDatabase' ||
+            role.role === 'dbAdminAnyDatabase' ||
+            role.role === 'clusterAdmin'
+        );
+
+        if (hasRootRole) {
+            return res.status(400).json({ error: 'Root users and users with administrative privileges cannot be deleted for security reasons.' });
+        }
 
         console.log('Deleting user with ID:', id);
 
-        await deleteUser(uri, db, id.split('.')[1]);
+        await deleteUser(uri, db, userName);
 
         res.json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
