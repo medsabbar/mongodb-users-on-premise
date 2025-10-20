@@ -5,7 +5,7 @@ const templates = require('./templtes/index');
 const { createUser, updateUser, deleteUser, validateAndNormalizeMongoURI } = require('./lib/index');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Global variables
 let mongoClient = null;
@@ -40,6 +40,7 @@ let demoUsers = [
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public')); // Serve static files
 app.set('view engine', 'ejs');
 
 
@@ -68,7 +69,7 @@ app.get('/', async (req, res) => {
         }
 
         const html = ejs.render(templates.layout, {
-            body: ejs.render(templates.index, { isConnected: isConnected || demoMode, users })
+            body: ejs.render(templates.index, { isConnected: isConnected || demoMode, users, isDemoMode: demoMode })
         });
 
         res.send(html);
