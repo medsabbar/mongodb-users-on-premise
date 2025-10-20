@@ -8,79 +8,90 @@ const templates = {
     <title>MongoDB User Management</title>
     <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        /* Custom app styles */
+        /* Custom app styles - shadcn/ui inspired */
         .app-header {
-            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
-            color: white;
-            padding: var(--space-xl) 0;
-            margin-bottom: var(--space-xl);
+            background: hsl(var(--background));
+            border-bottom: 1px solid hsl(var(--border));
+            padding: var(--space-6) 0;
+            margin-bottom: var(--space-8);
         }
         
         .app-header__content {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 var(--space-lg);
+            padding: 0 var(--space-6);
         }
         
         .app-title {
-            color: white;
-            margin-bottom: var(--space-sm);
+            color: hsl(var(--foreground));
+            margin-bottom: var(--space-2);
+            font-weight: var(--font-weight-bold);
+            letter-spacing: -0.025em;
         }
         
         .app-subtitle {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: var(--font-size-lg);
+            color: hsl(var(--muted-foreground));
+            font-size: var(--text-lg);
         }
         
         .connection-form {
-            background: white;
-            border-radius: var(--radius-xl);
-            padding: var(--space-xl);
-            box-shadow: var(--shadow-lg);
-            margin-bottom: var(--space-xl);
+            background-color: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: var(--radius-lg);
+            padding: var(--space-8);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-8);
         }
         
         .dashboard {
-            background: white;
-            border-radius: var(--radius-xl);
-            padding: var(--space-xl);
-            box-shadow: var(--shadow-lg);
+            background-color: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: var(--radius-lg);
+            padding: var(--space-8);
+            box-shadow: var(--shadow-sm);
         }
         
         .users-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: var(--space-lg);
-            margin-top: var(--space-lg);
+            gap: var(--space-6);
+            margin-top: var(--space-6);
         }
         
         .connection-examples {
-            background-color: var(--gray-50);
+            background-color: hsl(var(--muted));
             border-radius: var(--radius-md);
-            padding: var(--space-md);
-            margin-top: var(--space-md);
+            padding: var(--space-4);
+            margin-top: var(--space-4);
         }
         
         .connection-examples code {
             display: block;
-            margin: var(--space-xs) 0;
-            padding: var(--space-xs) var(--space-sm);
-            background-color: white;
+            margin: var(--space-1) 0;
+            padding: var(--space-2) var(--space-3);
+            background-color: hsl(var(--background));
+            border: 1px solid hsl(var(--border));
             border-radius: var(--radius-sm);
-            font-size: var(--font-size-xs);
+            font-size: var(--text-xs);
+            font-family: var(--font-mono);
         }
         
         @media (max-width: 768px) {
             .app-header__content {
-                padding: 0 var(--space-md);
+                padding: 0 var(--space-4);
             }
             
             .container {
-                padding: var(--space-md);
+                padding: var(--space-4);
             }
             
             .users-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .connection-form,
+            .dashboard {
+                padding: var(--space-6);
             }
         }
     </style>

@@ -635,6 +635,11 @@ class ConnectionManager {
 
     uri = uri.trim();
 
+    // Allow demo mode
+    if (uri === 'demo' || uri === 'test-demo') {
+      return null; // Valid for demo mode
+    }
+
     if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
       return 'URI must start with mongodb:// or mongodb+srv://';
     }
@@ -654,6 +659,11 @@ class ConnectionManager {
     if (!uri) return uri;
 
     uri = uri.trim();
+
+    // Handle demo mode
+    if (uri === 'demo' || uri === 'test-demo') {
+      return uri; // Return as-is for demo mode
+    }
 
     try {
       const url = new URL(uri);
