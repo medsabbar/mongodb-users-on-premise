@@ -6,744 +6,371 @@ const templates = {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MongoDB User Management</title>
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* Custom app styles */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+            color: white;
+            padding: var(--space-xl) 0;
+            margin-bottom: var(--space-xl);
         }
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-        
-        .container {
+        .app-header__content {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0 var(--space-lg);
         }
         
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        
-        .header h1 {
-            color: #4a5568;
-            margin-bottom: 10px;
-            font-size: 2.5rem;
-        }
-        
-        .connection-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 500;
-            margin-top: 10px;
-        }
-        
-        .status-connected {
-            background: #48bb78;
+        .app-title {
             color: white;
+            margin-bottom: var(--space-sm);
         }
         
-        .status-disconnected {
-            background: #f56565;
-            color: white;
+        .app-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: var(--font-size-lg);
         }
         
         .connection-form {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #4a5568;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        
-        .form-control:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-control.invalid {
-            border-color: #f56565;
-            box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
-        }
-
-        .form-control.valid {
-            border-color: #48bb78;
-            box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1);
-        }
-
-        .uri-feedback {
-            margin-top: 8px;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .uri-feedback.error {
-            background: #fed7d7;
-            color: #742a2a;
-            border: 1px solid #feb2b2;
-        }
-
-        .uri-feedback.success {
-            background: #c6f6d5;
-            color: #22543d;
-            border: 1px solid #9ae6b4;
-        }
-
-        .uri-feedback.info {
-            background: #bee3f8;
-            color: #2a4365;
-            border: 1px solid #90cdf4;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-        
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #5a67d8;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-success {
-            background: #48bb78;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #38a169;
-        }
-        
-        .btn-danger {
-            background: #f56565;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #e53e3e;
-        }
-        
-        .btn-warning {
-            background: #ed8936;
-            color: white;
-        }
-        
-        .btn-warning:hover {
-            background: #dd6b20;
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-lg);
+            margin-bottom: var(--space-xl);
         }
         
         .dashboard {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .dashboard-header h2 {
-            color: #4a5568;
-            font-size: 1.8rem;
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-lg);
         }
         
         .users-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--space-lg);
+            margin-top: var(--space-lg);
         }
         
-        .user-card {
-            background: #f7fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.3s;
+        .connection-examples {
+            background-color: var(--gray-50);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-top: var(--space-md);
         }
         
-        .user-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .user-card h3 {
-            color: #2d3748;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
-        
-        .user-card p {
-            color: #718096;
-            margin-bottom: 8px;
-        }
-        
-        .user-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .user-actions .btn {
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-        
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-        }
-        
-        .modal-content {
-            position: relative;
+        .connection-examples code {
+            display: block;
+            margin: var(--space-xs) 0;
+            padding: var(--space-xs) var(--space-sm);
             background-color: white;
-            margin: 5% auto;
-            padding: 0;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalSlideIn 0.3s ease;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
         }
         
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .modal-header {
-            padding: 20px 30px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-header h3 {
-            color: #4a5568;
-            font-size: 1.4rem;
-        }
-        
-        .close {
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #a0aec0;
-            transition: color 0.3s;
-        }
-        
-        .close:hover {
-            color: #f56565;
-        }
-        
-        .modal-body {
-            padding: 30px;
-        }
-        
-        .modal-footer {
-            padding: 20px 30px;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 15px;
-        }
-        
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-weight: 500;
-        }
-        
-        .alert-success {
-            background: #c6f6d5;
-            color: #22543d;
-            border: 1px solid #9ae6b4;
-        }
-        
-        .alert-danger {
-            background: #fed7d7;
-            color: #742a2a;
-            border: 1px solid #feb2b2;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #a0aec0;
-        }
-        
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-        
-        .empty-state h3 {
-            margin-bottom: 10px;
-            color: #718096;
-        }
-        
-        /* Responsive Design */
         @media (max-width: 768px) {
+            .app-header__content {
+                padding: 0 var(--space-md);
+            }
+            
             .container {
-                padding: 10px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .dashboard-header {
-                flex-direction: column;
-                align-items: stretch;
+                padding: var(--space-md);
             }
             
             .users-grid {
                 grid-template-columns: 1fr;
             }
-            
-            .modal-content {
-                width: 95%;
-                margin: 10% auto;
-            }
-            
-            .user-actions {
-                flex-direction: column;
-            }
         }
     </style>
 </head>
 <body>
+    <div class="app-header">
+        <div class="app-header__content">
+            <div class="group group--apart group--responsive">
+                <div class="stack stack--sm">
+                    <h1 class="title--h1 app-title">MongoDB User Management</h1>
+                    <p class="app-subtitle">Manage database users with ease</p>
+                </div>
+                <div id="connection-status-container"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <%- body %>
     </div>
 
+    <!-- Include JavaScript files -->
+    <script src="/js/icons.js"></script>
+    <script src="/js/components.js"></script>
+    
     <script>
-        // Modal functionality
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                if (event.target === modal) {
-                    closeModal(modal.id);
-                }
-            });
-        }
-
-        // Form submission handlers
-        async function submitForm(formId, actionUrl, method, successMessage) {
-            const form = document.getElementById(formId);
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-
-            try {
-                const response = await fetch(actionUrl, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    showAlert(successMessage, 'success');
-                    closeModal(form.closest('.modal').id);
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showAlert(result.error || 'An error occurred', 'danger');
-                }
-            } catch (error) {
-                showAlert('Network error: ' + error.message, 'danger');
-            }
-        }
-
-        function showAlert(message, type) {
-            // Escape HTML to prevent XSS
-            const escapedMessage = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            const alertHtml = \`<div class="alert alert-\${type}">\${escapedMessage}</div>\`;
-            const alertContainer = document.createElement('div');
-            alertContainer.innerHTML = alertHtml;
-            document.body.appendChild(alertContainer);
-            
-            setTimeout(() => {
-                alertContainer.remove();
-            }, 5000);
-        }
-
-        // Edit user functionality
-        function editUser(user) {
-            document.getElementById('editUserId').value = user._id;
-            document.getElementById('editUserName').value = user.name;
-            openModal('editUserModal');
-        }
-
-        // Delete user functionality
-        function deleteUser(userId, userName) {
-            document.getElementById('deleteUserId').value = userId;
-            document.getElementById('deleteUserName').textContent = userName;
-            openModal('deleteUserModal');
-        }
-
-        // URI validation function
-        function validateMongoURI(uri) {
-            if (!uri || typeof uri !== 'string') {
-                return 'URI is required';
-            }
-
-            uri = uri.trim();
-
-            if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
-                return 'URI must start with mongodb:// or mongodb+srv://';
-            }
-
-            try {
-                const url = new URL(uri);
-                if (!url.host) {
-                    return 'URI must include a valid host';
-                }
-                return null; // Valid
-            } catch (error) {
-                return 'Invalid URI format';
-            }
-        }
-
-        // Normalize URI to always include /admin database
-        function normalizeMongoURI(uri) {
-            if (!uri) return uri;
-
-            uri = uri.trim();
-
-            try {
-                const url = new URL(uri);
-                const protocol = url.protocol;
-                const host = url.host;
-                const pathname = url.pathname;
-                const search = url.search;
-
-                // If pathname is empty or just '/', add '/admin'
-                if (!pathname || pathname === '/') {
-                    return \`\${protocol}//\${host}/admin\${search}\`;
-                }
-
-                // Check if pathname contains a database name
-                const pathParts = pathname.split('/').filter(part => part.length > 0);
-                
-                if (pathParts.length === 0) {
-                    // No database specified, add admin
-                    return \`\${protocol}//\${host}/admin\${search}\`;
-                } else if (pathParts[0] !== 'admin') {
-                    // Database specified but not admin, replace with admin
-                    pathParts[0] = 'admin';
-                    const newPath = '/' + pathParts.join('/');
-                    return \`\${protocol}//\${host}\${newPath}\${search}\`;
-                }
-
-                // Already has admin database
-                return uri;
-            } catch (error) {
-                return uri; // Return original if parsing fails
-            }
-        }
-
-        // Connection form handler
-        async function connectToDatabase() {
-            const form = document.getElementById('connectionForm');
-            const uriInput = document.getElementById('uri');
-            const originalUri = uriInput.value;
-
-            // Validate URI
-            const validationError = validateMongoURI(originalUri);
-            if (validationError) {
-                showAlert(validationError, 'danger');
-                return;
-            }
-
-            // Normalize URI to include /admin database
-            const normalizedUri = normalizeMongoURI(originalUri);
-            
-            // Update the input field to show the normalized URI
-            if (normalizedUri !== originalUri) {
-                uriInput.value = normalizedUri;
-                showAlert('URI automatically updated to use admin database', 'success');
-                setTimeout(() => {
-                    proceedWithConnection(normalizedUri);
-                }, 1500);
-            } else {
-                proceedWithConnection(normalizedUri);
-            }
-        }
-
-        async function proceedWithConnection(uri) {
-            try {
-                const response = await fetch('/connect', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ uri })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    showAlert('Connected to database successfully!', 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showAlert(result.error || 'Failed to connect to database', 'danger');
-                }
-            } catch (error) {
-                showAlert('Network error: ' + error.message, 'danger');
-            }
-        }
-
-        // Real-time URI validation
-        function setupUriValidation() {
-            const uriInput = document.getElementById('uri');
-            const feedbackDiv = document.createElement('div');
-            feedbackDiv.id = 'uri-feedback';
-            feedbackDiv.className = 'uri-feedback';
-            feedbackDiv.style.display = 'none';
-            uriInput.parentNode.appendChild(feedbackDiv);
-
-            uriInput.addEventListener('input', function() {
-                const uri = this.value.trim();
-                
-                if (!uri) {
-                    this.className = 'form-control';
-                    feedbackDiv.style.display = 'none';
-                    return;
-                }
-
-                const validationError = validateMongoURI(uri);
-                
-                if (validationError) {
-                    this.className = 'form-control invalid';
-                    feedbackDiv.className = 'uri-feedback error';
-                    feedbackDiv.textContent = validationError;
-                    feedbackDiv.style.display = 'block';
-                } else {
-                    const normalizedUri = normalizeMongoURI(uri);
-                    
-                    if (normalizedUri !== uri) {
-                        this.className = 'form-control valid';
-                        feedbackDiv.className = 'uri-feedback info';
-                        feedbackDiv.textContent = \`Will be normalized to: \${normalizedUri}\`;
-                        feedbackDiv.style.display = 'block';
-                    } else {
-                        this.className = 'form-control valid';
-                        feedbackDiv.className = 'uri-feedback success';
-                        feedbackDiv.textContent = '✓ Valid MongoDB URI';
-                        feedbackDiv.style.display = 'block';
-                    }
-                }
-            });
-
-            uriInput.addEventListener('blur', function() {
-                const uri = this.value.trim();
-                if (uri && !validateMongoURI(uri)) {
-                    const normalizedUri = normalizeMongoURI(uri);
-                    if (normalizedUri !== uri) {
-                        this.value = normalizedUri;
-                        feedbackDiv.className = 'uri-feedback success';
-                        feedbackDiv.textContent = '✓ URI automatically normalized to use admin database';
-                    }
-                }
-            });
-        }
-
-        // Initialize URI validation when page loads
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            if (document.getElementById('uri')) {
-                setupUriValidation();
+            // Setup URI validation if connection form exists
+            if (typeof ConnectionManager !== 'undefined') {
+                ConnectionManager.setupURIValidation();
             }
+            
+            // Close modals when clicking outside
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('modal')) {
+                    if (typeof Modal !== 'undefined') {
+                        Modal.close(event.target.id);
+                    }
+                }
+            });
+            
+            // Handle escape key to close modals
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    if (typeof Modal !== 'undefined') {
+                        Modal.closeAll();
+                    }
+                }
+            });
         });
     </script>
 </body>
 </html>
-  `,
+`,
 
     index: `
-<% if (!isConnected) { %>
-    <div class="header">
-        <h1>MongoDB User Management</h1>
-        <div class="connection-status status-disconnected">
-            ● Disconnected
-        </div>
-    </div>
-
+<% if (!isConnected && !isDemoMode) { %>
     <div class="connection-form">
-        <h2>Connect to MongoDB</h2>
-        <p style="color: #718096; margin-bottom: 20px;">
-            <strong>Note:</strong> The URI will be automatically updated to use the 'admin' database if not specified.
-        </p>
-        <form id="connectionForm" onsubmit="event.preventDefault(); connectToDatabase();">
-            <div class="form-group">
-                <label for="uri">MongoDB Connection URI:</label>
-                <input type="text" id="uri" name="uri" class="form-control" 
-                       placeholder="mongodb://localhost:27017/?directConnection=true" 
-                       title="Enter your MongoDB connection URI. The admin database will be added automatically if not specified."
-                       required>
-                <small style="color: #a0aec0; margin-top: 5px; display: block;">
-                    Examples: 
-                    <br>• mongodb://localhost:27017/?directConnection=true
-                    <br>• mongodb://username:password@localhost:27017/?authSource=admin
-                    <br>• mongodb+srv://cluster.mongodb.net/?retryWrites=true
-                </small>
+        <div class="stack stack--lg">
+            <div class="stack stack--sm">
+                <h2 class="title--h3">Connect to MongoDB</h2>
+                <p class="text text--dimmed">
+                    Enter your MongoDB connection URI to get started. The URI will be automatically updated to use the 'admin' database if not specified.
+                </p>
             </div>
-            <button type="submit" class="btn btn-primary">Connect to MongoDB</button>
-        </form>
+
+            <form id="connectionForm" onsubmit="event.preventDefault(); ConnectionManager.connect();">
+                <div class="stack stack--md">
+                    <div class="form-group">
+                        <label class="form-label" for="uri">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                            </svg>
+                            MongoDB Connection URI
+                        </label>
+                        <input 
+                            type="text" 
+                            id="uri" 
+                            name="uri" 
+                            class="input" 
+                            placeholder="mongodb://localhost:27017/?directConnection=true"
+                            title="Enter your MongoDB connection URI"
+                            required
+                        >
+                    </div>
+
+                    <div class="connection-examples">
+                        <div class="text text--sm text--dimmed" style="margin-bottom: var(--space-sm);">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            Connection Examples:
+                        </div>
+                        <code>mongodb://localhost:27017/?directConnection=true</code>
+                        <code>mongodb://username:password@localhost:27017/?authSource=admin</code>
+                        <code>mongodb+srv://cluster.mongodb.net/?retryWrites=true</code>
+                        <code>demo (for demo mode)</code>
+                    </div>
+
+                    <button type="submit" class="btn btn--filled btn--md">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                        </svg>
+                        Connect to MongoDB
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+    
+    <script>
+        // Update connection status in header
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof UIComponents !== 'undefined') {
+                document.getElementById('connection-status-container').innerHTML = 
+                    '<span class="badge badge--error"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>Disconnected</span>';
+            }
+        });
+    </script>
 <% } else { %>
-    <div class="header">
-        <h1>MongoDB User Management</h1>
-        <div class="connection-status status-connected">
-            ● Connected
-        </div>
-    </div>
-
     <div class="dashboard">
-        <div class="dashboard-header">
-            <h2>Users Dashboard</h2>
-            <button class="btn btn-success" onclick="openModal('addUserModal')">
-                + Add New User
-            </button>
-        </div>
+        <div class="stack stack--xl">
+            <div class="group group--apart group--responsive">
+                <div class="stack stack--xs">
+                    <h2 class="title--h2">Users Dashboard</h2>
+                    <p class="text text--dimmed">Manage your MongoDB database users</p>
+                </div>
+                <button class="btn btn--success btn--md" onclick="Modal.open('addUserModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                    Add New User
+                </button>
+            </div>
 
-        <% if (users && users.length > 0) { %>
-            <div class="users-grid">
-                <% users.forEach(user => { %>
-                    <div class="user-card">
-                        <h3><%= user.name %></h3>
-                        <p><strong>Password:</strong> ••••••••</p>
-                        <div class="user-actions">
-                            <button class="btn btn-warning" 
-                                    onclick="editUser({_id: '<%- user._id %>', name: '<%- user.name.replace(/'/g, '\\\'') %>'})">
-                                Edit
-                            </button>
-                            <button class="btn btn-danger" 
-                                    onclick="deleteUser('<%- user._id %>', '<%- user.name.replace(/'/g, '\\\'') %>')">
-                                Delete
+            <% if (users && users.length > 0) { %>
+                <div class="stack stack--sm">
+                    <div class="group group--sm">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span class="text text--dimmed"><%= users.length %> user<%= users.length === 1 ? '' : 's' %> found</span>
+                    </div>
+                    <div class="users-grid">
+                        <% users.forEach(user => { %>
+                            <div class="card">
+                                <div class="card__body">
+                                    <div class="stack stack--sm">
+                                        <div class="group group--apart">
+                                            <h3 class="title--h5"><%= user.name %></h3>
+                                            <span class="badge badge--success">Active</span>
+                                        </div>
+                                        <div class="group group--sm text--dimmed">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <circle cx="12" cy="16" r="1"></circle>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            <span>Password protected</span>
+                                        </div>
+                                        <% if (user.createdAt && user.createdAt !== 'N/A') { %>
+                                            <div class="text text--xs text--dimmed">
+                                                Created: <%= new Date(user.createdAt).toLocaleDateString() %>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                                <div class="card__footer">
+                                    <div class="group group--sm">
+                                        <button type="button" class="btn btn--warning btn--xs" onclick="UserManager.editUser('<%- user._id %>', '<%- user.name.replace(/'/g, "\\'") %>')">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                            Edit
+                                        </button>
+                                        <button type="button" class="btn btn--error btn--xs" onclick="UserManager.deleteUser('<%- user._id %>', '<%- user.name.replace(/'/g, "\\'") %>')">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                                <polyline points="3,6 5,6 21,6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <div class="empty-state__icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <div class="stack stack--sm">
+                        <h3 class="title--h4">No users found</h3>
+                        <p class="text text--dimmed">Add your first user to get started managing your MongoDB database.</p>
+                        <div style="margin-top: var(--space-lg);">
+                            <button class="btn btn--filled btn--md" onclick="Modal.open('addUserModal')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="8.5" cy="7" r="4"></circle>
+                                    <line x1="20" y1="8" x2="20" y2="14"></line>
+                                    <line x1="23" y1="11" x2="17" y2="11"></line>
+                                </svg>
+                                Add Your First User
                             </button>
                         </div>
                     </div>
-                <% }) %>
-            </div>
-        <% } else { %>
-            <div class="empty-state">
-                <div style="font-size: 4rem; margin-bottom: 20px;">👥</div>
-                <h3>No users found</h3>
-                <p>Add your first user to get started!</p>
-            </div>
-        <% } %>
+                </div>
+            <% } %>
+        </div>
     </div>
 
     <!-- Add User Modal -->
     <div id="addUserModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Add New User</h3>
-                <span class="close" onclick="closeModal('addUserModal')">&times;</span>
+        <div class="modal__content">
+            <div class="modal__header">
+                <h3 class="title--h4">Add New User</h3>
+                <button type="button" class="btn btn--subtle btn--xs" onclick="Modal.close('addUserModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
-            <div class="modal-body">
-                <form id="addUserForm">
+            <div class="modal__body">
+                <form id="addUserForm" class="stack stack--md">
                     <div class="form-group">
-                        <label for="addUserName">Name:</label>
-                        <input type="text" id="addUserName" name="name" class="form-control" required>
+                        <label class="form-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            User Name
+                        </label>
+                        <input type="text" id="addUserName" name="name" class="input" placeholder="Enter username" required>
+                        <div class="form-help">Choose a unique username for the new user</div>
                     </div>
                     <div class="form-group">
-                        <label for="addUserPassword">Password:</label>
-                        <input type="password" id="addUserPassword" name="password" class="form-control" required>
+                        <label class="form-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <circle cx="12" cy="16" r="1"></circle>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            Password
+                        </label>
+                        <input type="password" id="addUserPassword" name="password" class="input" placeholder="Enter secure password" required>
+                        <div class="form-help">Use a strong password with at least 8 characters</div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" onclick="closeModal('addUserModal')">Cancel</button>
-                <button type="button" class="btn btn-success" 
-                        onclick="submitForm('addUserForm', '/users', 'POST', 'User added successfully!')">
-                    Add User
+            <div class="modal__footer">
+                <button type="button" class="btn btn--outline btn--md" onclick="Modal.close('addUserModal')">
+                    Cancel
+                </button>
+                <button 
+                    type="button" 
+                    class="btn btn--success btn--md" 
+                    onclick="UserManager.submitForm('addUserForm', '/users', 'POST', 'User created successfully!')"
+                    data-original-text="Create User"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                        <polyline points="7,3 7,8 15,8"></polyline>
+                    </svg>
+                    Create User
                 </button>
             </div>
         </div>
@@ -751,28 +378,59 @@ const templates = {
 
     <!-- Edit User Modal -->
     <div id="editUserModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Edit User</h3>
-                <span class="close" onclick="closeModal('editUserModal')">&times;</span>
+        <div class="modal__content">
+            <div class="modal__header">
+                <h3 class="title--h4">Edit User</h3>
+                <button type="button" class="btn btn--subtle btn--xs" onclick="Modal.close('editUserModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
-            <div class="modal-body">
-                <form id="editUserForm">
+            <div class="modal__body">
+                <form id="editUserForm" class="stack stack--md">
                     <input type="hidden" id="editUserId" name="id">
                     <div class="form-group">
-                        <label for="editUserName">Name:</label>
-                        <input type="text" id="editUserName" name="name" class="form-control" required>
+                        <label class="form-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            User Name
+                        </label>
+                        <input type="text" id="editUserName" name="name" class="input" placeholder="Enter username" required readonly>
+                        <div class="form-help">Username cannot be changed after creation</div>
                     </div>
                     <div class="form-group">
-                        <label for="editUserPassword">New Password:</label>
-                        <input type="password" id="editUserPassword" name="password" class="form-control" required>
+                        <label class="form-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <circle cx="12" cy="16" r="1"></circle>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            New Password
+                        </label>
+                        <input type="password" id="editUserPassword" name="password" class="input" placeholder="Enter new password" required>
+                        <div class="form-help">Enter a new password for this user</div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" onclick="closeModal('editUserModal')">Cancel</button>
-                <button type="button" class="btn btn-warning" 
-                        onclick="submitForm('editUserForm', '/users/update', 'PUT', 'User updated successfully!')">
+            <div class="modal__footer">
+                <button type="button" class="btn btn--outline btn--md" onclick="Modal.close('editUserModal')">
+                    Cancel
+                </button>
+                <button 
+                    type="button" 
+                    class="btn btn--warning btn--md" 
+                    onclick="UserManager.submitForm('editUserForm', '/users/update', 'PUT', 'User updated successfully!')"
+                    data-original-text="Update User"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                        <polyline points="7,3 7,8 15,8"></polyline>
+                    </svg>
                     Update User
                 </button>
             </div>
@@ -781,29 +439,69 @@ const templates = {
 
     <!-- Delete User Modal -->
     <div id="deleteUserModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Delete User</h3>
-                <span class="close" onclick="closeModal('deleteUserModal')">&times;</span>
+        <div class="modal__content">
+            <div class="modal__header">
+                <h3 class="title--h4">Delete User</h3>
+                <button type="button" class="btn btn--subtle btn--xs" onclick="Modal.close('deleteUserModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
-                <p style="color: #f56565; font-weight: 500;">This action cannot be undone.</p>
-                <form id="deleteUserForm">
-                    <input type="hidden" id="deleteUserId" name="id">
-                </form>
+            <div class="modal__body">
+                <div class="stack stack--md">
+                    <div class="alert alert--error">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <div>
+                            <strong>This action cannot be undone!</strong>
+                            <br>Are you sure you want to delete user <strong id="deleteUserName"></strong>?
+                        </div>
+                    </div>
+                    <form id="deleteUserForm">
+                        <input type="hidden" id="deleteUserId" name="id">
+                    </form>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" onclick="closeModal('deleteUserModal')">Cancel</button>
-                <button type="button" class="btn btn-danger" 
-                        onclick="submitForm('deleteUserForm', '/users/delete', 'DELETE', 'User deleted successfully!')">
+            <div class="modal__footer">
+                <button type="button" class="btn btn--outline btn--md" onclick="Modal.close('deleteUserModal')">
+                    Cancel
+                </button>
+                <button 
+                    type="button" 
+                    class="btn btn--error btn--md" 
+                    onclick="UserManager.submitForm('deleteUserForm', '/users/delete', 'DELETE', 'User deleted successfully!')"
+                    data-original-text="Delete User"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
                     Delete User
                 </button>
             </div>
         </div>
     </div>
+
+    <script>
+        // Update connection status in header
+        document.addEventListener('DOMContentLoaded', function() {
+            const isDemoMode = <%= isDemoMode || false %>;
+            const statusHtml = isDemoMode ? 
+                '<span class="badge badge--warning"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Demo Mode</span>' :
+                '<span class="badge badge--success"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22,4 12,14.01 9,11.01"></polyline></svg>Connected</span>';
+            
+            document.getElementById('connection-status-container').innerHTML = statusHtml;
+        });
+    </script>
 <% } %>
-  `
+`
 };
 
 module.exports = templates;
