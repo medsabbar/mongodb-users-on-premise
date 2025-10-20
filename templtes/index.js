@@ -276,6 +276,22 @@ const templates = {
                                             </svg>
                                             <span>Password protected</span>
                                         </div>
+                                        <% if (user.roles && user.roles.length > 0) { %>
+                                            <div class="group group--sm">
+                                                <% user.roles.forEach(role => { %>
+                                                    <% if (role.role === 'root' || role.role === 'userAdminAnyDatabase' || role.role === 'dbAdminAnyDatabase' || role.role === 'clusterAdmin') { %>
+                                                        <span class="badge badge--error">
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                                                <path d="M12 1l3 6 6 1-4.5 4.5 1.5 6.5-6-3-6 3 1.5-6.5L1 8l6-1z"/>
+                                                            </svg>
+                                                            <%= role.role %>
+                                                        </span>
+                                                    <% } else { %>
+                                                        <span class="badge badge--secondary"><%= role.role %></span>
+                                                    <% } %>
+                                                <% }) %>
+                                            </div>
+                                        <% } %>
                                         <% if (user.createdAt && user.createdAt !== 'N/A') { %>
                                             <div class="text text--xs text--dimmed">
                                                 Created: <%= new Date(user.createdAt).toLocaleDateString() %>
@@ -292,15 +308,34 @@ const templates = {
                                             </svg>
                                             Edit
                                         </button>
-                                        <button type="button" class="btn btn--error btn--xs" onclick="UserManager.deleteUser('<%- user._id %>', '<%- user.name.replace(/'/g, "\\'") %>')">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
-                                                <polyline points="3,6 5,6 21,6"></polyline>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                <line x1="14" y1="11" x2="14" y2="17"></line>
-                                            </svg>
-                                            Delete
-                                        </button>
+                                        <% 
+                                        const isProtectedUser = user.roles && user.roles.some(role => 
+                                            role.role === 'root' || 
+                                            role.role === 'userAdminAnyDatabase' || 
+                                            role.role === 'dbAdminAnyDatabase' || 
+                                            role.role === 'clusterAdmin'
+                                        );
+                                        %>
+                                        <% if (isProtectedUser) { %>
+                                            <button type="button" class="btn btn--outline btn--xs" disabled title="Root users cannot be deleted for security reasons">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                    <circle cx="12" cy="16" r="1"></circle>
+                                                    <path d="m9 9 1.5 1.5L16 6"></path>
+                                                </svg>
+                                                Protected
+                                            </button>
+                                        <% } else { %>
+                                            <button type="button" class="btn btn--error btn--xs" onclick="UserManager.deleteUser('<%- user._id %>', '<%- user.name.replace(/'/g, "\\'") %>')">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                                    <polyline points="3,6 5,6 21,6"></polyline>
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                </svg>
+                                                Delete
+                                            </button>
+                                        <% } %>
                                     </div>
                                 </div>
                             </div>
