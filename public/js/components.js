@@ -197,12 +197,288 @@ class Modal {
   }
 }
 
+// Role management functions
+class RoleManager {
+  static builtinRoles = {};
+  static customRoles = [];
+
+  static async loadBuiltinRoles() {
+    try {
+      const response = await fetch('/roles/builtin');
+      const result = await response.json();
+      if (response.ok) {
+        this.builtinRoles = result.roles;
+      }
+    } catch (error) {
+      console.error('Error loading built-in roles:', error);
+    }
+  }
+
+  static async loadCustomRoles() {
+    try {
+      const response = await fetch('/roles/custom');
+      const result = await response.json();
+      if (response.ok) {
+        this.customRoles = result.roles;
+      }
+    } catch (error) {
+      console.error('Error loading custom roles:', error);
+    }
+  }
+
+  static async createCustomRole(roleName, privileges, inheritedRoles) {
+    try {
+      const response = await fetch('/roles/custom', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          roleName,
+          privileges,
+          inheritedRoles
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        NotificationManager.show(result.message, 'success');
+        await this.loadCustomRoles();
+        return true;
+      } else {
+        NotificationManager.show(result.error || 'Failed to create role', 'error');
+        return false;
+      }
+    } catch (error) {
+      NotificationManager.show('Network error: ' + error.message, 'error');
+      return false;
+    }
+  }
+
+  static async deleteCustomRole(roleName) {
+    try {
+      const response = await fetch(`/roles/custom/${roleName}`, {
+        method: 'DELETE'
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        NotificationManager.show(result.message, 'success');
+        await this.loadCustomRoles();
+        return true;
+      } else {
+        NotificationManager.show(result.error || 'Failed to delete role', 'error');
+        return false;
+      }
+    } catch (error) {
+      NotificationManager.show('Network error: ' + error.message, 'error');
+      return false;
+    }
+  }
+
+  static openCreateRoleModal() {
+    Modal.open('createRoleModal');
+  }
+
+  static async openManageRolesModal() {
+    await this.loadBuiltinRoles();
+    await this.loadCustomRoles();
+    this.displayBuiltinRoles();
+    this.displayCustomRoles();
+    Modal.open('manageRolesModal');
+  }
+
+  static displayBuiltinRoles() {
+    const container = document.getElementById('builtinRolesList');
+    if (!container) return;
+
+    if (Object.keys(this.builtinRoles).length === 0) {
+      container.innerHTML = '<p class="text text--dimmed">No built-in roles available</p>';
+      return;
+    }
+
+    let html = '';
+    Object.entries(this.builtinRoles).forEach(([key, role]) => {
+      html += `
+        <div class="card">
+          <div class="card__body">
+            <div class="group group--apart">
+              <div class="stack stack--xs">
+                <h5 class="title--h6">${role.role}</h5>
+                <p class="text text--sm text--dimmed">${role.description}</p>
+              </div>
+              <span class="badge badge--info">Built-in</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  static displayCustomRoles() {
+    const container = document.getElementById('customRolesList');
+    if (!container) return;
+
+    if (this.customRoles.length === 0) {
+      container.innerHTML = '<p class="text text--dimmed">No custom roles created yet</p>';
+      return;
+    }
+
+    let html = '';
+    this.customRoles.forEach(role => {
+      const privilegesCount = role.privileges ? role.privileges.length : 0;
+      html += `
+        <div class="card">
+          <div class="card__body">
+            <div class="group group--apart">
+              <div class="stack stack--xs">
+                <h5 class="title--h6">${role.role}</h5>
+                <p class="text text--sm text--dimmed">${privilegesCount} privilege${privilegesCount === 1 ? '' : 's'}</p>
+              </div>
+              <div class="group group--xs">
+                <span class="badge badge--success">Custom</span>
+                <button class="btn btn--error btn--xs" onclick="RoleManager.confirmDeleteRole('${role.role}')">
+                  ${Icons.trash(14)}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  static confirmDeleteRole(roleName) {
+    if (confirm(`Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`)) {
+      this.deleteCustomRole(roleName).then(success => {
+        if (success) {
+          this.displayCustomRoles();
+        }
+      });
+    }
+  }
+
+  static addPrivilegeRow() {
+    const container = document.getElementById('privilegesContainer');
+    const privilegeRow = document.createElement('div');
+    privilegeRow.className = 'privilege-row';
+    privilegeRow.innerHTML = `
+      <div class="group group--sm" style="align-items: end;">
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Database</label>
+          <input type="text" class="input privilege-db" placeholder="Database name" required>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Collection (optional)</label>
+          <input type="text" class="input privilege-collection" placeholder="Collection name">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Actions</label>
+          <select multiple class="input privilege-actions" required>
+            <option value="find">find</option>
+            <option value="insert">insert</option>
+            <option value="update">update</option>
+            <option value="remove">remove</option>
+            <option value="createCollection">createCollection</option>
+            <option value="dropCollection">dropCollection</option>
+            <option value="createIndex">createIndex</option>
+            <option value="dropIndex">dropIndex</option>
+            <option value="listCollections">listCollections</option>
+            <option value="listIndexes">listIndexes</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn--error btn--xs" onclick="this.parentElement.parentElement.remove()">
+          ${Icons.trash(16)}
+        </button>
+      </div>
+    `;
+    container.appendChild(privilegeRow);
+  }
+
+  static async submitCreateRole() {
+    const form = document.getElementById('createRoleForm');
+    const formData = new FormData(form);
+    const roleName = formData.get('roleName');
+
+    if (!roleName) {
+      NotificationManager.show('Role name is required', 'error');
+      return;
+    }
+
+    // Collect privileges
+    const privileges = [];
+    const privilegeRows = document.querySelectorAll('.privilege-row');
+    
+    privilegeRows.forEach(row => {
+      const db = row.querySelector('.privilege-db').value;
+      const collection = row.querySelector('.privilege-collection').value;
+      const actionsSelect = row.querySelector('.privilege-actions');
+      const actions = Array.from(actionsSelect.selectedOptions).map(option => option.value);
+
+      if (db && actions.length > 0) {
+        const resource = collection ? { db, collection } : { db };
+        privileges.push({ resource, actions });
+      }
+    });
+
+    const success = await this.createCustomRole(roleName, privileges, []);
+    if (success) {
+      Modal.close('createRoleModal');
+      form.reset();
+      document.getElementById('privilegesContainer').innerHTML = '';
+    }
+  }
+}
+
 // User management functions
 class UserManager {
   static editUser(userId, userName) {
     document.getElementById('editUserId').value = userId;
     document.getElementById('editUserName').value = userName;
+    this.loadUserRoles(userId);
     Modal.open('editUserModal');
+  }
+
+  static async loadUserRoles(userId) {
+    // In a real implementation, you would fetch the user's current roles
+    // For now, we'll just populate the role selection UI
+    await RoleManager.loadBuiltinRoles();
+    await RoleManager.loadCustomRoles();
+    this.populateRoleSelectors();
+  }
+
+  static populateRoleSelectors() {
+    const addRoleSelect = document.getElementById('addUserRoles');
+    const editRoleSelect = document.getElementById('editUserRoles');
+    
+    if (addRoleSelect) {
+      addRoleSelect.innerHTML = this.generateRoleOptions();
+    }
+    if (editRoleSelect) {
+      editRoleSelect.innerHTML = this.generateRoleOptions();
+    }
+  }
+
+  static generateRoleOptions() {
+    let options = '<option value="">Select roles...</option>';
+    
+    // Built-in roles
+    Object.entries(RoleManager.builtinRoles).forEach(([key, role]) => {
+      options += `<option value="${key}" data-type="builtin">${role.role} - ${role.description}</option>`;
+    });
+    
+    // Custom roles
+    RoleManager.customRoles.forEach(role => {
+      options += `<option value="${role.role}" data-type="custom">${role.role} (Custom)</option>`;
+    });
+    
+    return options;
   }
 
   static deleteUser(userId, userName) {
@@ -225,6 +501,24 @@ class UserManager {
     try {
       const formData = new FormData(form);
       const data = Object.fromEntries(formData);
+
+      // Handle role selection for user forms
+      if (formId === 'addUserForm' || formId === 'editUserForm') {
+        const roleSelect = form.querySelector('select[name="roles"]');
+        if (roleSelect) {
+          const selectedRoles = Array.from(roleSelect.selectedOptions).map(option => {
+            const roleType = option.getAttribute('data-type');
+            const roleName = option.value;
+            
+            if (roleType === 'builtin') {
+              return { role: roleName, db: 'admin' }; // Built-in roles typically go on admin db
+            } else {
+              return { role: roleName, db: 'admin' }; // Custom roles
+            }
+          });
+          data.roles = selectedRoles;
+        }
+      }
 
       const response = await fetch(actionUrl, {
         method: method,
@@ -488,6 +782,34 @@ style.textContent = `
     font-size: 0.875em;
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   }
+
+  .privilege-row {
+    padding: var(--space-md);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    background-color: var(--gray-50);
+  }
+
+  .privilege-row:not(:last-child) {
+    margin-bottom: var(--space-sm);
+  }
+
+  .privilege-actions {
+    min-height: 100px;
+  }
+
+  .privilege-actions option {
+    padding: 4px 8px;
+  }
+
+  .role-card {
+    transition: all 0.2s ease;
+  }
+
+  .role-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+  }
 `;
 document.head.appendChild(style);
 
@@ -496,6 +818,7 @@ if (typeof window !== 'undefined') {
   window.UIComponents = UIComponents;
   window.Modal = Modal;
   window.UserManager = UserManager;
+  window.RoleManager = RoleManager;
   window.NotificationManager = NotificationManager;
   window.ConnectionManager = ConnectionManager;
 }

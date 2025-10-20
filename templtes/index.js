@@ -216,15 +216,25 @@ const templates = {
                     <h2 class="title--h2">Users Dashboard</h2>
                     <p class="text text--dimmed">Manage your MongoDB database users</p>
                 </div>
-                <button class="btn btn--success btn--md" onclick="Modal.open('addUserModal')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="8.5" cy="7" r="4"></circle>
-                        <line x1="20" y1="8" x2="20" y2="14"></line>
-                        <line x1="23" y1="11" x2="17" y2="11"></line>
-                    </svg>
-                    Add New User
-                </button>
+                <div class="group group--sm">
+                    <button class="btn btn--success btn--md" onclick="Modal.open('addUserModal')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="8.5" cy="7" r="4"></circle>
+                            <line x1="20" y1="8" x2="20" y2="14"></line>
+                            <line x1="23" y1="11" x2="17" y2="11"></line>
+                        </svg>
+                        Add New User
+                    </button>
+                    <button class="btn btn--outline btn--md" onclick="RoleManager.openManageRolesModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                            <path d="M9 12l2 2 4-4"></path>
+                            <path d="M21 12c.552 0 1-.448 1-1V8c0-.552-.448-1-1-1h-3l-1-1h-4l-1 1H9c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1"></path>
+                            <path d="M3 12c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1h3l1 1h4l1-1h3c.552 0 1-.448 1-1v-3c0-.552-.448-1-1-1"></path>
+                        </svg>
+                        Manage Roles
+                    </button>
+                </div>
             </div>
 
             <% if (users && users.length > 0) { %>
@@ -353,6 +363,19 @@ const templates = {
                         <input type="password" id="addUserPassword" name="password" class="input" placeholder="Enter secure password" required>
                         <div class="form-help">Use a strong password with at least 8 characters</div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <path d="M9 12l2 2 4-4"></path>
+                                <path d="M21 12c.552 0 1-.448 1-1V8c0-.552-.448-1-1-1h-3l-1-1h-4l-1 1H9c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1"></path>
+                            </svg>
+                            Roles
+                        </label>
+                        <select multiple id="addUserRoles" name="roles" class="input" style="min-height: 120px;">
+                            <option value="">Loading roles...</option>
+                        </select>
+                        <div class="form-help">Hold Ctrl/Cmd to select multiple roles. Leave empty for default readWrite role.</div>
+                    </div>
                 </form>
             </div>
             <div class="modal__footer">
@@ -411,8 +434,21 @@ const templates = {
                             </svg>
                             New Password
                         </label>
-                        <input type="password" id="editUserPassword" name="password" class="input" placeholder="Enter new password" required>
-                        <div class="form-help">Enter a new password for this user</div>
+                        <input type="password" id="editUserPassword" name="password" class="input" placeholder="Enter new password">
+                        <div class="form-help">Enter a new password for this user (leave empty to keep current password)</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <path d="M9 12l2 2 4-4"></path>
+                                <path d="M21 12c.552 0 1-.448 1-1V8c0-.552-.448-1-1-1h-3l-1-1h-4l-1 1H9c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1"></path>
+                            </svg>
+                            Roles
+                        </label>
+                        <select multiple id="editUserRoles" name="roles" class="input" style="min-height: 120px;">
+                            <option value="">Loading roles...</option>
+                        </select>
+                        <div class="form-help">Hold Ctrl/Cmd to select multiple roles</div>
                     </div>
                 </form>
             </div>
@@ -489,6 +525,110 @@ const templates = {
         </div>
     </div>
 
+    <!-- Manage Roles Modal -->
+    <div id="manageRolesModal" class="modal">
+        <div class="modal__content" style="max-width: 800px;">
+            <div class="modal__header">
+                <h3 class="title--h4">Manage Roles</h3>
+                <button type="button" class="btn btn--subtle btn--xs" onclick="Modal.close('manageRolesModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal__body">
+                <div class="stack stack--lg">
+                    <div class="group group--apart">
+                        <h4 class="title--h5">Built-in Roles</h4>
+                    </div>
+                    <div id="builtinRolesList" class="stack stack--sm">
+                        <p class="text text--dimmed">Loading built-in roles...</p>
+                    </div>
+                    
+                    <div class="group group--apart">
+                        <h4 class="title--h5">Custom Roles</h4>
+                        <button class="btn btn--success btn--sm" onclick="RoleManager.openCreateRoleModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Create Custom Role
+                        </button>
+                    </div>
+                    <div id="customRolesList" class="stack stack--sm">
+                        <p class="text text--dimmed">Loading custom roles...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button type="button" class="btn btn--outline btn--md" onclick="Modal.close('manageRolesModal')">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Custom Role Modal -->
+    <div id="createRoleModal" class="modal">
+        <div class="modal__content" style="max-width: 700px;">
+            <div class="modal__header">
+                <h3 class="title--h4">Create Custom Role</h3>
+                <button type="button" class="btn btn--subtle btn--xs" onclick="Modal.close('createRoleModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal__body">
+                <form id="createRoleForm" class="stack stack--lg">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                <path d="M9 12l2 2 4-4"></path>
+                                <path d="M21 12c.552 0 1-.448 1-1V8c0-.552-.448-1-1-1h-3l-1-1h-4l-1 1H9c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1"></path>
+                            </svg>
+                            Role Name
+                        </label>
+                        <input type="text" name="roleName" class="input" placeholder="Enter role name" required>
+                        <div class="form-help">Choose a unique name for your custom role</div>
+                    </div>
+                    
+                    <div class="stack stack--sm">
+                        <div class="group group--apart">
+                            <label class="form-label">Privileges</label>
+                            <button type="button" class="btn btn--outline btn--xs" onclick="RoleManager.addPrivilegeRow()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Add Privilege
+                            </button>
+                        </div>
+                        <div id="privilegesContainer" class="stack stack--sm">
+                            <!-- Privilege rows will be added here -->
+                        </div>
+                        <div class="form-help">Define what databases and collections this role can access and what actions it can perform</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal__footer">
+                <button type="button" class="btn btn--outline btn--md" onclick="Modal.close('createRoleModal')">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn--success btn--md" onclick="RoleManager.submitCreateRole()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                        <polyline points="7,3 7,8 15,8"></polyline>
+                    </svg>
+                    Create Role
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Update connection status in header
         document.addEventListener('DOMContentLoaded', function() {
@@ -498,6 +638,14 @@ const templates = {
                 '<span class="badge badge--success"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22,4 12,14.01 9,11.01"></polyline></svg>Connected</span>';
             
             document.getElementById('connection-status-container').innerHTML = statusHtml;
+            
+            // Load roles when page loads
+            if (typeof RoleManager !== 'undefined') {
+                RoleManager.loadBuiltinRoles().then(() => {
+                    UserManager.populateRoleSelectors();
+                });
+                RoleManager.loadCustomRoles();
+            }
         });
     </script>
 <% } %>

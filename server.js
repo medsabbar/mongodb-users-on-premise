@@ -2,7 +2,18 @@ const express = require('express');
 const { MongoClient } = require('mongodb');
 const ejs = require('ejs');
 const templates = require('./templtes/index');
-const { createUser, updateUser, deleteUser, validateAndNormalizeMongoURI } = require('./lib/index');
+const { 
+    createUser, 
+    updateUser, 
+    deleteUser, 
+    validateAndNormalizeMongoURI,
+    createCustomRole,
+    updateCustomRole,
+    deleteCustomRole,
+    listRoles,
+    getBuiltinRoles,
+    formatRoleForDisplay
+} = require('./lib/index');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -159,10 +170,18 @@ app.post('/connect', async (req, res) => {
 // Create user
 app.post('/users', async (req, res) => {
     try {
+        if (!isConnected && !demoMode) {
+            return res.status(400).json({ error: 'Not connected to database' });
+        }
+
+        if (demoMode) {
+            return res.json({ success: true, message: 'User created successfully (demo mode)' });
+        }
+
         if (!db) {
             return res.status(400).json({ error: 'Not connected to database' });
         }
-        const { name, password } = req.body;
+        const { name, password, roles = [] } = req.body;
         if (!name || !password) {
             return res.status(400).json({ error: 'Name and password are required' });
         }
@@ -174,7 +193,7 @@ app.post('/users', async (req, res) => {
             return res.status(400).json({ error: 'User with this name already exists' });
         }
 
-        await createUser(uri, db, { name, password });
+        await createUser(uri, db, { name, password, roles });
 
         res.json({ success: true, message: 'User created successfully' });
 
@@ -192,7 +211,11 @@ app.put('/users/update', async (req, res) => {
             return res.status(400).json({ error: 'Not connected to database' });
         }
 
-        const { id, password } = req.body;
+        const { id, password, roles } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
 
         // Check if user already exists for other users
         const existingUser = await db.command({
@@ -202,7 +225,11 @@ app.put('/users/update', async (req, res) => {
             return res.status(400).json({ error: 'User with this name already exists' });
         }
 
-        await updateUser(uri, db, { name: id.split('.')[1], password });
+        const updateData = { name: id.split('.')[1] };
+        if (password) updateData.password = password;
+        if (roles) updateData.roles = roles;
+        
+        await updateUser(uri, db, updateData);
 
         res.json({ success: true, message: 'User updated successfully' });
     } catch (error) {
@@ -233,6 +260,141 @@ app.delete('/users/delete', async (req, res) => {
     } catch (error) {
         console.error('Error deleting user:', error);
         res.status(500).json({ error: 'Failed to delete user: ' + error.message });
+    }
+});
+
+// Get built-in roles
+app.get('/roles/builtin', (req, res) => {
+    try {
+        const builtinRoles = getBuiltinRoles();
+        res.json({ roles: builtinRoles });
+    } catch (error) {
+        console.error('Error getting built-in roles:', error);
+        res.status(500).json({ error: 'Failed to get built-in roles' });
+    }
+});
+
+// List custom roles
+app.get('/roles/custom', async (req, res) => {
+    try {
+        if (!isConnected && !demoMode) {
+            return res.status(400).json({ error: 'Not connected to database' });
+        }
+
+        if (demoMode) {
+            // Return demo custom roles
+            const demoRoles = [
+                {
+                    role: 'dataAnalyst',
+                    privileges: [
+                        {
+                            resource: { db: 'analytics' },
+                            actions: ['find', 'listCollections']
+                        }
+                    ],
+                    roles: [],
+                    isCustom: true
+                }
+            ];
+            return res.json({ roles: demoRoles });
+        }
+
+        const rolesOutput = await listRoles(uri, db);
+        // Parse the MongoDB output to extract roles
+        let customRoles = [];
+        try {
+            // The output might need parsing depending on mongosh format
+            customRoles = JSON.parse(rolesOutput);
+        } catch (parseError) {
+            console.log('Could not parse roles output:', rolesOutput);
+            customRoles = [];
+        }
+
+        res.json({ roles: customRoles });
+    } catch (error) {
+        console.error('Error listing custom roles:', error);
+        res.status(500).json({ error: 'Failed to list custom roles: ' + error.message });
+    }
+});
+
+// Create custom role
+app.post('/roles/custom', async (req, res) => {
+    try {
+        if (!isConnected && !demoMode) {
+            return res.status(400).json({ error: 'Not connected to database' });
+        }
+
+        const { roleName, privileges = [], inheritedRoles = [] } = req.body;
+
+        if (!roleName) {
+            return res.status(400).json({ error: 'Role name is required' });
+        }
+
+        if (demoMode) {
+            return res.json({ success: true, message: 'Custom role created successfully (demo mode)' });
+        }
+
+        const roleObj = {
+            role: roleName,
+            privileges: privileges,
+            roles: inheritedRoles
+        };
+
+        await createCustomRole(uri, db, roleObj);
+
+        res.json({ success: true, message: 'Custom role created successfully' });
+    } catch (error) {
+        console.error('Error creating custom role:', error);
+        res.status(500).json({ error: 'Failed to create custom role: ' + error.message });
+    }
+});
+
+// Update custom role
+app.put('/roles/custom/:roleName', async (req, res) => {
+    try {
+        if (!isConnected && !demoMode) {
+            return res.status(400).json({ error: 'Not connected to database' });
+        }
+
+        const { roleName } = req.params;
+        const { privileges, inheritedRoles } = req.body;
+
+        if (demoMode) {
+            return res.json({ success: true, message: 'Custom role updated successfully (demo mode)' });
+        }
+
+        const updates = {};
+        if (privileges !== undefined) updates.privileges = privileges;
+        if (inheritedRoles !== undefined) updates.roles = inheritedRoles;
+
+        await updateCustomRole(uri, db, roleName, updates);
+
+        res.json({ success: true, message: 'Custom role updated successfully' });
+    } catch (error) {
+        console.error('Error updating custom role:', error);
+        res.status(500).json({ error: 'Failed to update custom role: ' + error.message });
+    }
+});
+
+// Delete custom role
+app.delete('/roles/custom/:roleName', async (req, res) => {
+    try {
+        if (!isConnected && !demoMode) {
+            return res.status(400).json({ error: 'Not connected to database' });
+        }
+
+        const { roleName } = req.params;
+
+        if (demoMode) {
+            return res.json({ success: true, message: 'Custom role deleted successfully (demo mode)' });
+        }
+
+        await deleteCustomRole(uri, db, roleName);
+
+        res.json({ success: true, message: 'Custom role deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting custom role:', error);
+        res.status(500).json({ error: 'Failed to delete custom role: ' + error.message });
     }
 });
 
