@@ -1,6 +1,6 @@
 {
   "name": "mongodb-usermanagement",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Single-file MongoDB user management application",
   "main": "dist/server.js",
   "scripts": {
