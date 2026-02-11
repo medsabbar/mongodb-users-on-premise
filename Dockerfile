@@ -1,6 +1,34 @@
 # Use the official Node.js runtime as the base image
-# Using Node.js 18 LTS for stability and security
-FROM node:18-alpine
+# Using Node.js 24 LTS for stability and security
+
+###
+# Build stage: install deps and build backend + frontend
+###
+FROM node:24-alpine AS build
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy root package.json/package-lock.json and backend sources
+COPY package*.json ./
+COPY tsconfig.backend.json ./
+COPY server.ts ./server.ts
+COPY lib ./lib
+
+# Copy client app
+COPY client ./client
+
+# Install all dependencies (including dev) and build
+RUN npm install && \
+    npm cache clean --force && \
+    cd client && npm install && \
+    cd /app && npm run build && \
+    npm prune --omit=dev
+
+###
+# Runtime stage: minimal image with compiled app and production deps only
+###
+FROM node:24-alpine AS runtime
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -9,23 +37,16 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
 
-# Copy root package.json/package-lock.json and backend sources
-COPY package*.json ./
-COPY tsconfig.backend.json ./
-COPY server.ts ./server.ts
-COPY lib ./lib
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3001
 
-# Install all dependencies (including TypeScript for build)
-RUN npm install && \
-    npm cache clean --force
-
-# Copy client app and install its dependencies, then build full app (server + client)
-COPY client ./client
-RUN cd client && npm install
-RUN npm run build
-
-# Copy remaining application files (public assets, init scripts, etc.)
-COPY public ./public
+# Copy only what we need from the build stage
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/client/dist ./client/dist
+# init script is tiny; copy directly from build context
 COPY init-mongo.js ./init-mongo.js
 
 # Change ownership of the app directory to the nodejs user
@@ -47,10 +68,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     }); \
     req.on('error', () => process.exit(1)); \
     req.end();"
-
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3001
 
 # Start the application
 CMD ["npm", "start"]

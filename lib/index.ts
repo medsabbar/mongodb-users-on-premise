@@ -1,8 +1,8 @@
-import { exec } from 'child_process';
-import type { Db, ObjectId } from 'mongodb';
-import { getAllowedActions } from './actionsTree';
+import { exec } from "child_process";
+import type { Db, ObjectId } from "mongodb";
+import { getAllowedActions } from "./actionsTree";
 
-export type BuiltinRoleCategory = 'collection' | 'database' | 'global';
+export type BuiltinRoleCategory = "collection" | "database" | "global";
 
 export interface BuiltinRole {
   role: string;
@@ -58,73 +58,143 @@ export interface TemporaryUserMetadata {
   createdAt: Date;
   expiresAt: Date;
   expiredAt?: Date;
-  status: 'active' | 'expired';
+  status: "active" | "expired";
   roles: InheritedRole[];
 }
 
 const BUILTIN_ROLES: BuiltinRolesMap = {
   // Collection Actions - roles that primarily affect collections
-  read: { role: 'read', description: 'Read data from all non-system collections', category: 'collection' },
-  readWrite: { role: 'readWrite', description: 'Read and write data to all non-system collections', category: 'collection' },
+  read: {
+    role: "read",
+    description: "Read data from all non-system collections",
+    category: "collection",
+  },
+  readWrite: {
+    role: "readWrite",
+    description: "Read and write data to all non-system collections",
+    category: "collection",
+  },
 
   // Database Actions and Roles - roles that affect database-level operations
-  dbAdmin: { role: 'dbAdmin', description: 'Administrative privileges on the database', category: 'database' },
-  dbOwner: { role: 'dbOwner', description: 'Full privileges on the database', category: 'database' },
-  userAdmin: { role: 'userAdmin', description: 'Create and modify roles and users on the database', category: 'database' },
+  dbAdmin: {
+    role: "dbAdmin",
+    description: "Administrative privileges on the database",
+    category: "database",
+  },
+  dbOwner: {
+    role: "dbOwner",
+    description: "Full privileges on the database",
+    category: "database",
+  },
+  userAdmin: {
+    role: "userAdmin",
+    description: "Create and modify roles and users on the database",
+    category: "database",
+  },
 
   // Global Actions and Roles - cluster-wide and system roles
-  clusterAdmin: { role: 'clusterAdmin', description: 'Full cluster administration access', category: 'global' },
-  clusterManager: { role: 'clusterManager', description: 'Manage and monitor cluster operations', category: 'global' },
-  clusterMonitor: { role: 'clusterMonitor', description: 'Read-only access to monitoring tools', category: 'global' },
-  hostManager: { role: 'hostManager', description: 'Monitor and manage servers', category: 'global' },
-  backup: { role: 'backup', description: 'Backup database data', category: 'global' },
-  restore: { role: 'restore', description: 'Restore database data', category: 'global' },
-  readAnyDatabase: { role: 'readAnyDatabase', description: 'Read data from all databases', category: 'global' },
-  readWriteAnyDatabase: { role: 'readWriteAnyDatabase', description: 'Read and write data to all databases', category: 'global' },
-  userAdminAnyDatabase: { role: 'userAdminAnyDatabase', description: 'User administration privileges on all databases', category: 'global' },
-  dbAdminAnyDatabase: { role: 'dbAdminAnyDatabase', description: 'Database administration privileges on all databases', category: 'global' },
-  root: { role: 'root', description: 'Full access to all operations and resources', category: 'global' }
+  clusterAdmin: {
+    role: "clusterAdmin",
+    description: "Full cluster administration access",
+    category: "global",
+  },
+  clusterManager: {
+    role: "clusterManager",
+    description: "Manage and monitor cluster operations",
+    category: "global",
+  },
+  clusterMonitor: {
+    role: "clusterMonitor",
+    description: "Read-only access to monitoring tools",
+    category: "global",
+  },
+  hostManager: {
+    role: "hostManager",
+    description: "Monitor and manage servers",
+    category: "global",
+  },
+  backup: {
+    role: "backup",
+    description: "Backup database data",
+    category: "global",
+  },
+  restore: {
+    role: "restore",
+    description: "Restore database data",
+    category: "global",
+  },
+  readAnyDatabase: {
+    role: "readAnyDatabase",
+    description: "Read data from all databases",
+    category: "global",
+  },
+  readWriteAnyDatabase: {
+    role: "readWriteAnyDatabase",
+    description: "Read and write data to all databases",
+    category: "global",
+  },
+  userAdminAnyDatabase: {
+    role: "userAdminAnyDatabase",
+    description: "User administration privileges on all databases",
+    category: "global",
+  },
+  dbAdminAnyDatabase: {
+    role: "dbAdminAnyDatabase",
+    description: "Database administration privileges on all databases",
+    category: "global",
+  },
+  root: {
+    role: "root",
+    description: "Full access to all operations and resources",
+    category: "global",
+  },
 };
 
 const ALLOWED_ACTIONS = getAllowedActions();
 
 function validateRoleName(name: unknown): asserts name is string {
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    throw new Error('Role name is required');
+  if (!name || typeof name !== "string" || !name.trim()) {
+    throw new Error("Role name is required");
   }
 }
 
-function validatePrivilegeResource(resource: unknown): asserts resource is PrivilegeResource {
-  if (!resource || typeof resource !== 'object') {
-    throw new Error('Privilege resource must be an object');
+function validatePrivilegeResource(
+  resource: unknown,
+): asserts resource is PrivilegeResource {
+  if (!resource || typeof resource !== "object") {
+    throw new Error("Privilege resource must be an object");
   }
 
   const { db, collection } = resource as PrivilegeResource;
 
-  if (typeof db !== 'string') {
-    throw new Error('Privilege resource.db must be a string (\"\" allowed for any db)');
+  if (typeof db !== "string") {
+    throw new Error(
+      'Privilege resource.db must be a string (\"\" allowed for any db)',
+    );
   }
 
-  if (collection !== undefined && typeof collection !== 'string') {
-    throw new Error('Privilege resource.collection must be a string when provided (\"\" allowed for any collection)');
+  if (collection !== undefined && typeof collection !== "string") {
+    throw new Error(
+      'Privilege resource.collection must be a string when provided (\"\" allowed for any collection)',
+    );
   }
 }
 
 function validatePrivilege(priv: unknown): asserts priv is Privilege {
-  if (!priv || typeof priv !== 'object') {
-    throw new Error('Each privilege must be an object');
+  if (!priv || typeof priv !== "object") {
+    throw new Error("Each privilege must be an object");
   }
 
   const privilege = priv as Privilege;
   validatePrivilegeResource(privilege.resource);
 
   if (!Array.isArray(privilege.actions) || privilege.actions.length === 0) {
-    throw new Error('Each privilege must specify at least one action');
+    throw new Error("Each privilege must specify at least one action");
   }
 
   for (const action of privilege.actions) {
-    if (typeof action !== 'string' || !action.trim()) {
-      throw new Error('Privilege actions must be non-empty strings');
+    if (typeof action !== "string" || !action.trim()) {
+      throw new Error("Privilege actions must be non-empty strings");
     }
     if (!ALLOWED_ACTIONS.has(action)) {
       throw new Error(`Action \"${action}\" is not allowed for custom roles`);
@@ -132,30 +202,37 @@ function validatePrivilege(priv: unknown): asserts priv is Privilege {
   }
 }
 
-function validatePrivileges(privileges: unknown): asserts privileges is Privilege[] {
+function validatePrivileges(
+  privileges: unknown,
+): asserts privileges is Privilege[] {
   if (!Array.isArray(privileges)) {
-    throw new Error('privileges must be an array');
+    throw new Error("privileges must be an array");
   }
   privileges.forEach((p) => validatePrivilege(p));
 }
 
 type InheritedRoleInput = string | { role: string; db?: string };
 
-function normalizeInheritedRoles(inheritedRoles: InheritedRoleInput[], defaultDb: string): InheritedRole[] {
+function normalizeInheritedRoles(
+  inheritedRoles: InheritedRoleInput[],
+  defaultDb: string,
+): InheritedRole[] {
   if (!Array.isArray(inheritedRoles)) {
-    throw new Error('inheritedRoles must be an array');
+    throw new Error("inheritedRoles must be an array");
   }
 
   return inheritedRoles.map((r) => {
-    if (typeof r === 'string') {
+    if (typeof r === "string") {
       return { role: r, db: defaultDb };
     }
-    if (!r || typeof r !== 'object' || !r.role) {
-      throw new Error('Inherited roles must be strings or objects with a role field');
+    if (!r || typeof r !== "object" || !r.role) {
+      throw new Error(
+        "Inherited roles must be strings or objects with a role field",
+      );
     }
     return {
       role: r.role,
-      db: r.db || defaultDb
+      db: r.db || defaultDb,
     };
   });
 }
@@ -165,14 +242,17 @@ interface RoleInfoDoc {
   db: string;
 }
 
-async function assertInheritedRolesExist(db: Db, inheritedRoles: InheritedRole[]): Promise<void> {
+async function assertInheritedRolesExist(
+  db: Db,
+  inheritedRoles: InheritedRole[],
+): Promise<void> {
   if (!inheritedRoles.length) return;
 
   const rolesInfo = inheritedRoles.map((r) => ({ role: r.role, db: r.db }));
   const result = await db.command({
     rolesInfo,
     showPrivileges: false,
-    showBuiltinRoles: true
+    showBuiltinRoles: true,
   });
 
   const existingRoles = (result.roles || []) as RoleInfoDoc[];
@@ -180,19 +260,23 @@ async function assertInheritedRolesExist(db: Db, inheritedRoles: InheritedRole[]
   const missing = inheritedRoles.filter((r) => !found.has(`${r.role}@${r.db}`));
 
   if (missing.length) {
-    const names = missing.map((r) => `${r.role} (db: ${r.db})`).join(', ');
+    const names = missing.map((r) => `${r.role} (db: ${r.db})`).join(", ");
     throw new Error(`Inherited roles do not exist: ${names}`);
   }
 }
 
-async function assertNoCircularInheritance(db: Db, roleName: string, inheritedRoles: InheritedRole[]): Promise<void> {
+async function assertNoCircularInheritance(
+  db: Db,
+  roleName: string,
+  inheritedRoles: InheritedRole[],
+): Promise<void> {
   if (!inheritedRoles.length) return;
 
   // Load existing custom roles (user-defined only)
   const result = await db.command({
     rolesInfo: 1,
     showPrivileges: false,
-    showBuiltinRoles: false
+    showBuiltinRoles: false,
   });
 
   const roles: MongoRole[] = result.roles || [];
@@ -201,7 +285,7 @@ async function assertNoCircularInheritance(db: Db, roleName: string, inheritedRo
   for (const role of roles) {
     const name = role.role;
     const children = (role.roles || [])
-      .filter((r) => r && typeof r.role === 'string')
+      .filter((r) => r && typeof r.role === "string")
       .map((r) => r.role);
     if (name) {
       graph.set(name, children);
@@ -212,8 +296,8 @@ async function assertNoCircularInheritance(db: Db, roleName: string, inheritedRo
   graph.set(
     roleName,
     inheritedRoles
-      .filter((r) => r && typeof r.role === 'string')
-      .map((r) => r.role)
+      .filter((r) => r && typeof r.role === "string")
+      .map((r) => r.role),
   );
 
   const visiting = new Set<string>();
@@ -221,7 +305,9 @@ async function assertNoCircularInheritance(db: Db, roleName: string, inheritedRo
 
   function dfs(node: string): void {
     if (visiting.has(node)) {
-      throw new Error(`Circular role inheritance detected involving role \"${node}\"`);
+      throw new Error(
+        `Circular role inheritance detected involving role \"${node}\"`,
+      );
     }
     if (visited.has(node)) return;
 
@@ -244,7 +330,11 @@ export class CustomRole {
   roles: InheritedRole[];
   isCustom: true;
 
-  constructor(name: string, privileges: Privilege[] = [], inheritedRoles: InheritedRole[] = []) {
+  constructor(
+    name: string,
+    privileges: Privilege[] = [],
+    inheritedRoles: InheritedRole[] = [],
+  ) {
     this.role = name;
     this.privileges = privileges;
     this.roles = inheritedRoles;
@@ -252,8 +342,14 @@ export class CustomRole {
   }
 
   // Add privilege to the role
-  addPrivilege(database: string, collection: string | undefined, actions: string[]): void {
-    const resource: PrivilegeResource = collection ? { db: database, collection } : { db: database };
+  addPrivilege(
+    database: string,
+    collection: string | undefined,
+    actions: string[],
+  ): void {
+    const resource: PrivilegeResource = collection
+      ? { db: database, collection }
+      : { db: database };
     this.privileges.push({ resource, actions });
   }
 
@@ -262,28 +358,31 @@ export class CustomRole {
     return {
       role: this.role,
       privileges: this.privileges,
-      roles: this.roles
+      roles: this.roles,
     };
   }
 }
 
 // URI validation function
 export function validateAndNormalizeMongoURI(uri: string): string {
-  if (!uri || typeof uri !== 'string') {
-    throw new Error('URI is required and must be a string');
+  if (!uri || typeof uri !== "string") {
+    throw new Error("URI is required and must be a string");
   }
 
   // Remove leading/trailing whitespace
   let normalized = uri.trim();
 
   // Special case for demo mode
-  if (normalized.includes('demo') || normalized.includes('test-demo')) {
+  if (normalized.includes("demo") || normalized.includes("test-demo")) {
     return normalized;
   }
 
   // Basic MongoDB URI format validation
-  if (!normalized.startsWith('mongodb://') && !normalized.startsWith('mongodb+srv://')) {
-    throw new Error('URI must start with mongodb:// or mongodb+srv://');
+  if (
+    !normalized.startsWith("mongodb://") &&
+    !normalized.startsWith("mongodb+srv://")
+  ) {
+    throw new Error("URI must start with mongodb:// or mongodb+srv://");
   }
 
   try {
@@ -298,20 +397,20 @@ export function validateAndNormalizeMongoURI(uri: string): string {
 
     // Validate host
     if (!host) {
-      throw new Error('URI must include a valid host');
+      throw new Error("URI must include a valid host");
     }
 
     // Preserve credentials if present
     const hasAuth = !!url.username;
     const authPart = hasAuth
-      ? `${encodeURIComponent(url.username)}${url.password ? ':' + encodeURIComponent(url.password) : ''}@`
-      : '';
+      ? `${encodeURIComponent(url.username)}${url.password ? ":" + encodeURIComponent(url.password) : ""}@`
+      : "";
 
     // Check if database is already specified in the path
     let finalURI = normalized;
 
     // If pathname is empty or just '/', we need to add '/admin'
-    if (!pathname || pathname === '/') {
+    if (!pathname || pathname === "/") {
       // Add /admin before query parameters
       if (search) {
         finalURI = `${protocol}//${authPart}${host}/admin${search}`;
@@ -320,7 +419,7 @@ export function validateAndNormalizeMongoURI(uri: string): string {
       }
     } else {
       // Check if pathname contains a database name other than admin
-      const pathParts = pathname.split('/').filter((part) => part.length > 0);
+      const pathParts = pathname.split("/").filter((part) => part.length > 0);
 
       if (pathParts.length === 0) {
         // No database specified, add admin
@@ -329,10 +428,10 @@ export function validateAndNormalizeMongoURI(uri: string): string {
         } else {
           finalURI = `${protocol}//${authPart}${host}/admin`;
         }
-      } else if (pathParts[0] !== 'admin') {
+      } else if (pathParts[0] !== "admin") {
         // Database specified but not admin, replace with admin
-        pathParts[0] = 'admin';
-        const newPath = '/' + pathParts.join('/');
+        pathParts[0] = "admin";
+        const newPath = "/" + pathParts.join("/");
         finalURI = `${protocol}//${authPart}${host}${newPath}${search}`;
       }
       // If already admin, keep as is
@@ -348,14 +447,19 @@ export function validateAndNormalizeMongoURI(uri: string): string {
   }
 }
 
-export async function createUser(uri: string, db: Db, user: CreateUserInput): Promise<string> {
+export async function createUser(
+  uri: string,
+  db: Db,
+  user: CreateUserInput,
+): Promise<string> {
   const { name, password, roles = [], customData } = user;
   const promise = new Promise<string>((resolve, reject) => {
     // Ensure we're using the validated URI
     const validatedUri = validateAndNormalizeMongoURI(uri);
 
     // Default to readWrite role if no roles specified
-    const userRoles = roles.length > 0 ? roles : [{ role: 'readWrite', db: db.databaseName }];
+    const userRoles =
+      roles.length > 0 ? roles : [{ role: "readWrite", db: db.databaseName }];
 
     // Format roles for MongoDB command, escaping quotes for the shell
     const rolesStr = JSON.stringify(userRoles).replace(/"/g, '\\"');
@@ -363,16 +467,20 @@ export async function createUser(uri: string, db: Db, user: CreateUserInput): Pr
     // Build customData for the user document. We always include createdAt, and
     // optionally mark temporary users with an explicit expiry timestamp so a
     // TTL index on system.users can clean them up.
-    const customParts: string[] = ['createdAt: new Date()'];
+    const customParts: string[] = ["createdAt: new Date()"];
     if (customData) {
-      if (typeof customData.isTemporary === 'boolean') {
-        customParts.push(`isTemporary: ${customData.isTemporary ? 'true' : 'false'}`);
+      if (typeof customData.isTemporary === "boolean") {
+        customParts.push(
+          `isTemporary: ${customData.isTemporary ? "true" : "false"}`,
+        );
       }
       if (customData.tempExpiresAt instanceof Date) {
-        customParts.push(`tempExpiresAt: new Date('${customData.tempExpiresAt.toISOString()}')`);
+        customParts.push(
+          `tempExpiresAt: new Date('${customData.tempExpiresAt.toISOString()}')`,
+        );
       }
     }
-    const customDataStr = customParts.join(', ');
+    const customDataStr = customParts.join(", ");
 
     const command = `mongosh "${validatedUri}" --eval "db.createUser({user: '${name}', pwd: '${password}', roles: ${rolesStr}, customData: { ${customDataStr} }})" --quiet`;
     exec(command, (error, stdout, stderr) => {
@@ -389,7 +497,11 @@ export async function createUser(uri: string, db: Db, user: CreateUserInput): Pr
   return promise;
 }
 
-export async function updateUser(uri: string, db: Db, user: UpdateUserInput): Promise<string> {
+export async function updateUser(
+  uri: string,
+  db: Db,
+  user: UpdateUserInput,
+): Promise<string> {
   void db; // db is unused here; required for signature compatibility
   const { name, password, roles } = user;
   const promise = new Promise<string>((resolve, reject) => {
@@ -417,7 +529,11 @@ export async function updateUser(uri: string, db: Db, user: UpdateUserInput): Pr
   return promise;
 }
 
-export async function deleteUser(uri: string, db: Db, name: string): Promise<string> {
+export async function deleteUser(
+  uri: string,
+  db: Db,
+  name: string,
+): Promise<string> {
   void db; // db is unused here; required for signature compatibility
   const promise = new Promise<string>((resolve, reject) => {
     // Ensure we're using the validated URI
@@ -441,13 +557,17 @@ export async function deleteUser(uri: string, db: Db, name: string): Promise<str
 export async function createCustomRole(
   uri: string, // kept for signature compatibility
   db: Db,
-  role: { role: string; privileges?: Privilege[]; roles?: InheritedRoleInput[] }
+  role: {
+    role: string;
+    privileges?: Privilege[];
+    roles?: InheritedRoleInput[];
+  },
 ): Promise<void> {
   // uri is kept for signature compatibility but ignored; we use native driver
   void uri;
   validateRoleName(role.role);
   const privileges = role.privileges || [];
-  const defaultDb = db.databaseName || 'admin';
+  const defaultDb = db.databaseName || "admin";
   const inheritedRoles = normalizeInheritedRoles(role.roles || [], defaultDb);
 
   validatePrivileges(privileges);
@@ -457,7 +577,7 @@ export async function createCustomRole(
   await db.command({
     createRole: role.role,
     privileges,
-    roles: inheritedRoles
+    roles: inheritedRoles,
   });
 }
 
@@ -465,14 +585,14 @@ export async function updateCustomRole(
   uri: string, // kept for signature compatibility
   db: Db,
   roleName: string,
-  updates: { privileges?: Privilege[]; roles?: InheritedRoleInput[] }
+  updates: { privileges?: Privilege[]; roles?: InheritedRoleInput[] },
 ): Promise<void> {
   // uri is kept for signature compatibility but ignored; we use native driver
   void uri;
   validateRoleName(roleName);
 
   const patch: { privileges?: Privilege[]; roles?: InheritedRole[] } = {};
-  const defaultDb = db.databaseName || 'admin';
+  const defaultDb = db.databaseName || "admin";
 
   if (updates.privileges !== undefined) {
     validatePrivileges(updates.privileges || []);
@@ -480,7 +600,10 @@ export async function updateCustomRole(
   }
 
   if (updates.roles !== undefined) {
-    const normalizedRoles = normalizeInheritedRoles(updates.roles || [], defaultDb);
+    const normalizedRoles = normalizeInheritedRoles(
+      updates.roles || [],
+      defaultDb,
+    );
     await assertInheritedRolesExist(db, normalizedRoles);
     await assertNoCircularInheritance(db, roleName, normalizedRoles);
     patch.roles = normalizedRoles;
@@ -493,14 +616,14 @@ export async function updateCustomRole(
 
   await db.command({
     updateRole: roleName,
-    ...patch
+    ...patch,
   });
 }
 
 export async function deleteCustomRole(
   uri: string, // kept for signature compatibility
   db: Db,
-  roleName: string
+  roleName: string,
 ): Promise<void> {
   // uri is kept for signature compatibility but ignored; we use native driver
   void uri;
@@ -514,7 +637,7 @@ export async function deleteCustomRole(
     showCustomData: false,
     showPrivileges: false,
     showAuthenticationRestrictions: false,
-    filter: {}
+    filter: {},
   });
 
   type UserInfoDoc = {
@@ -525,7 +648,7 @@ export async function deleteCustomRole(
     inheritedRoles?: InheritedRole[];
   };
 
-  const dbName = db.databaseName || 'admin';
+  const dbName = db.databaseName || "admin";
   const users = (usersResult.users || []) as UserInfoDoc[];
   const consumers: string[] = [];
 
@@ -534,10 +657,10 @@ export async function deleteCustomRole(
     const inherited = user.inheritedRoles || [];
     const allRoles = [...direct, ...inherited];
     const hasRole = allRoles.some(
-      (r) => r.role === roleName && r.db === dbName
+      (r) => r.role === roleName && r.db === dbName,
     );
     if (hasRole) {
-      const name = user.user || user._id || '<unknown>';
+      const name = user.user || user._id || "<unknown>";
       consumers.push(name);
     }
   }
@@ -545,13 +668,13 @@ export async function deleteCustomRole(
   if (consumers.length > 0) {
     throw new Error(
       `Cannot delete role "${roleName}" because it is still assigned to users: ${consumers.join(
-        ', '
-      )}`
+        ", ",
+      )}`,
     );
   }
 
   await db.command({
-    dropRole: roleName
+    dropRole: roleName,
   });
 }
 
@@ -561,7 +684,7 @@ export async function listRoles(uri: string, db: Db): Promise<MongoRole[]> {
   const result = await db.command({
     rolesInfo: 1,
     showPrivileges: true,
-    showBuiltinRoles: false
+    showBuiltinRoles: false,
   });
   return (result.roles || []) as MongoRole[];
 }
@@ -577,9 +700,12 @@ export interface EffectivePrivileges {
   authenticationRestrictions: unknown[];
 }
 
-export async function getUserEffectivePrivileges(db: Db, userName: string): Promise<EffectivePrivileges | null> {
+export async function getUserEffectivePrivileges(
+  db: Db,
+  userName: string,
+): Promise<EffectivePrivileges | null> {
   if (!userName) {
-    throw new Error('User name is required');
+    throw new Error("User name is required");
   }
 
   const result = await db.command({
@@ -587,7 +713,7 @@ export async function getUserEffectivePrivileges(db: Db, userName: string): Prom
     showCredentials: false,
     showCustomData: true,
     showPrivileges: true,
-    showAuthenticationRestrictions: true
+    showAuthenticationRestrictions: true,
   });
 
   if (!result.users || result.users.length === 0) {
@@ -612,7 +738,7 @@ export async function getUserEffectivePrivileges(db: Db, userName: string): Prom
     inheritedRoles: user.inheritedRoles || [],
     privileges: user.inheritedPrivileges || user.privileges || [],
     customData: user.customData || {},
-    authenticationRestrictions: user.authenticationRestrictions || []
+    authenticationRestrictions: user.authenticationRestrictions || [],
   };
 }
 
@@ -620,10 +746,22 @@ export async function getUserEffectivePrivileges(db: Db, userName: string): Prom
 export async function createTemporaryUser(
   uri: string,
   db: Db,
-  { name, password, roles = [], expiresAt }: { name: string; password: string; roles?: InheritedRole[]; expiresAt: Date }
+  {
+    name,
+    password,
+    roles = [],
+    expiresAt,
+  }: {
+    name: string;
+    password: string;
+    roles?: InheritedRole[];
+    expiresAt: Date;
+  },
 ): Promise<void> {
   if (!name || !password || !expiresAt) {
-    throw new Error('name, password and expiresAt are required for temporary users');
+    throw new Error(
+      "name, password and expiresAt are required for temporary users",
+    );
   }
 
   const now = new Date();
@@ -638,28 +776,30 @@ export async function createTemporaryUser(
     roles,
     customData: {
       isTemporary: true,
-      tempExpiresAt: expiryDate
-    }
+      tempExpiresAt: expiryDate,
+    },
   });
 
   // Store metadata in admin.tempUsers collection for auditing/history.
-  const collection = db.collection<TemporaryUserMetadata>('tempUsers');
+  const collection = db.collection<TemporaryUserMetadata>("tempUsers");
 
   await collection.insertOne({
     username: name,
     createdAt: now,
     expiresAt: expiryDate,
-    status: 'active',
-    roles
+    status: "active",
+    roles,
   });
 }
 
-export async function cleanupExpiredTemporaryUsers(uri: string, db: Db): Promise<{ cleaned: number }> {
-  const collection = db.collection<TemporaryUserMetadata>('tempUsers');
+export async function cleanupExpiredTemporaryUsers(
+  db: Db,
+): Promise<{ cleaned: number }> {
+  const collection = db.collection<TemporaryUserMetadata>("tempUsers");
   const now = new Date();
 
   const expired = await collection
-    .find({ status: 'active', expiresAt: { $lte: now } })
+    .find({ status: "active", expiresAt: { $lte: now } })
     .toArray();
 
   if (!expired.length) {
@@ -674,7 +814,7 @@ export async function cleanupExpiredTemporaryUsers(uri: string, db: Db): Promise
   for (const tempUser of expired) {
     await collection.updateOne(
       { _id: tempUser._id as ObjectId },
-      { $set: { status: 'expired', expiredAt: now } }
+      { $set: { status: "expired", expiredAt: now } },
     );
     cleaned += 1;
   }
@@ -682,8 +822,10 @@ export async function cleanupExpiredTemporaryUsers(uri: string, db: Db): Promise
   return { cleaned };
 }
 
-export async function listTemporaryUsers(db: Db): Promise<TemporaryUserMetadata[]> {
-  const collection = db.collection<TemporaryUserMetadata>('tempUsers');
+export async function listTemporaryUsers(
+  db: Db,
+): Promise<TemporaryUserMetadata[]> {
+  const collection = db.collection<TemporaryUserMetadata>("tempUsers");
   return collection.find({}).toArray();
 }
 
@@ -692,11 +834,14 @@ export function getBuiltinRoles(): BuiltinRolesMap {
   return BUILTIN_ROLES;
 }
 
-export function getBuiltinRolesGrouped(): Record<BuiltinRoleCategory, BuiltinRole[]> {
+export function getBuiltinRolesGrouped(): Record<
+  BuiltinRoleCategory,
+  BuiltinRole[]
+> {
   const grouped: Record<BuiltinRoleCategory, BuiltinRole[]> = {
     collection: [],
     database: [],
-    global: []
+    global: [],
   };
 
   Object.values(BUILTIN_ROLES).forEach((role) => {
@@ -708,15 +853,19 @@ export function getBuiltinRolesGrouped(): Record<BuiltinRoleCategory, BuiltinRol
   return grouped;
 }
 
-export function createCustomRoleObject(name: string, privileges: Privilege[] = [], inheritedRoles: InheritedRole[] = []): CustomRole {
+export function createCustomRoleObject(
+  name: string,
+  privileges: Privilege[] = [],
+  inheritedRoles: InheritedRole[] = [],
+): CustomRole {
   return new CustomRole(name, privileges, inheritedRoles);
 }
 
 export function formatRoleForDisplay(
-  role: string | (MongoRole & { isCustom?: boolean })
+  role: string | (MongoRole & { isCustom?: boolean }),
 ): BuiltinRole | (MongoRole & { isCustom?: boolean }) {
-  if (typeof role === 'string') {
-    return BUILTIN_ROLES[role] || { role, description: 'Custom role' };
+  if (typeof role === "string") {
+    return BUILTIN_ROLES[role] || { role, description: "Custom role" };
   }
 
   if (role.role && BUILTIN_ROLES[role.role]) {
@@ -725,8 +874,7 @@ export function formatRoleForDisplay(
 
   return {
     role: role.role || (role as MongoRole).role,
-    description: role.description || 'Custom role',
-    isCustom: true
+    description: role.description || "Custom role",
+    isCustom: true,
   };
 }
-
