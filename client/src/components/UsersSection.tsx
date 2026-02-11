@@ -15,6 +15,8 @@ import {
 import { UsersTable } from "./UsersTable";
 import { PrivilegesSheet } from "./PrivilegesSheet";
 import { UserCreateDialog } from "./UserCreateDialog";
+import { UserEditDialog } from "./UserEditDialog";
+import { UserPasswordDialog } from "./UserPasswordDialog";
 import type { ApiUser, DashboardStats } from "../types/api";
 import { fetchJson } from "../utils/api";
 
@@ -35,6 +37,8 @@ export function UsersSection({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ApiUser | null>(null);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<ApiUser | null>(null);
+  const [passwordUser, setPasswordUser] = useState<ApiUser | null>(null);
 
   function requestDelete(user: ApiUser) {
     if (!user?._id) return;
@@ -122,6 +126,8 @@ export function UsersSection({
           users={users}
           onDelete={requestDelete}
           onInspect={(user) => setActiveUser(user)}
+          onEdit={(user) => setEditingUser(user)}
+          onChangePassword={(user) => setPasswordUser(user)}
         />
       </div>
 
@@ -176,6 +182,20 @@ export function UsersSection({
         open={userDialogOpen}
         onOpenChange={setUserDialogOpen}
         onCreated={reload}
+        onError={onError}
+      />
+      {/* Edit user roles (no password changes) */}
+      <UserEditDialog
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+        onUpdated={reload}
+        onError={onError}
+      />
+      {/* Change user password (separate action) */}
+      <UserPasswordDialog
+        user={passwordUser}
+        onClose={() => setPasswordUser(null)}
+        onChanged={reload}
         onError={onError}
       />
     </div>

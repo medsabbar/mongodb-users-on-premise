@@ -40,6 +40,10 @@ export interface CreateUserInput {
   name: string;
   password: string;
   roles?: InheritedRole[];
+  customData?: {
+    isTemporary?: boolean;
+    tempExpiresAt?: Date;
+  };
 }
 
 export interface UpdateUserInput {
@@ -345,7 +349,7 @@ export function validateAndNormalizeMongoURI(uri: string): string {
 }
 
 export async function createUser(uri: string, db: Db, user: CreateUserInput): Promise<string> {
-  const { name, password, roles = [] } = user;
+  const { name, password, roles = [], customData } = user;
   const promise = new Promise<string>((resolve, reject) => {
     // Ensure we're using the validated URI
     const validatedUri = validateAndNormalizeMongoURI(uri);
@@ -356,7 +360,21 @@ export async function createUser(uri: string, db: Db, user: CreateUserInput): Pr
     // Format roles for MongoDB command, escaping quotes for the shell
     const rolesStr = JSON.stringify(userRoles).replace(/"/g, '\\"');
 
-    const command = `mongosh "${validatedUri}" --eval "db.createUser({user: '${name}', pwd: '${password}', roles: ${rolesStr}, customData: { createdAt: new Date() }})" --quiet`;
+    // Build customData for the user document. We always include createdAt, and
+    // optionally mark temporary users with an explicit expiry timestamp so a
+    // TTL index on system.users can clean them up.
+    const customParts: string[] = ['createdAt: new Date()'];
+    if (customData) {
+      if (typeof customData.isTemporary === 'boolean') {
+        customParts.push(`isTemporary: ${customData.isTemporary ? 'true' : 'false'}`);
+      }
+      if (customData.tempExpiresAt instanceof Date) {
+        customParts.push(`tempExpiresAt: new Date('${customData.tempExpiresAt.toISOString()}')`);
+      }
+    }
+    const customDataStr = customParts.join(', ');
+
+    const command = `mongosh "${validatedUri}" --eval "db.createUser({user: '${name}', pwd: '${password}', roles: ${rolesStr}, customData: { ${customDataStr} }})" --quiet`;
     exec(command, (error, stdout, stderr) => {
       // eslint-disable-next-line no-console
       console.log(error, stdout, stderr);
@@ -608,13 +626,24 @@ export async function createTemporaryUser(
     throw new Error('name, password and expiresAt are required for temporary users');
   }
 
-  // Create the actual MongoDB user first
-  await createUser(uri, db, { name, password, roles });
-
-  // Store metadata in admin.tempUsers collection
-  const collection = db.collection<TemporaryUserMetadata>('tempUsers');
   const now = new Date();
   const expiryDate = new Date(expiresAt);
+
+  // Create the actual MongoDB user first, including metadata that marks it as
+  // temporary and records its expiry timestamp. This allows a TTL index on
+  // system.users.customData.tempExpiresAt to remove the user automatically.
+  await createUser(uri, db, {
+    name,
+    password,
+    roles,
+    customData: {
+      isTemporary: true,
+      tempExpiresAt: expiryDate
+    }
+  });
+
+  // Store metadata in admin.tempUsers collection for auditing/history.
+  const collection = db.collection<TemporaryUserMetadata>('tempUsers');
 
   await collection.insertOne({
     username: name,
@@ -637,22 +666,17 @@ export async function cleanupExpiredTemporaryUsers(uri: string, db: Db): Promise
     return { cleaned: 0 };
   }
 
+  // We no longer drop MongoDB users here; that responsibility is delegated to
+  // a TTL index on system.users.customData.tempExpiresAt. This helper now
+  // strictly updates audit metadata in tempUsers.
   let cleaned = 0;
 
   for (const tempUser of expired) {
-    try {
-      await deleteUser(uri, db, tempUser.username);
-    } catch (error) {
-      // Best-effort cleanup – keep metadata even if dropUser fails
-      // eslint-disable-next-line no-console
-      console.error(`Failed to drop expired temporary user ${tempUser.username}:`, error);
-    } finally {
-      await collection.updateOne(
-        { _id: tempUser._id as ObjectId },
-        { $set: { status: 'expired', expiredAt: now } }
-      );
-      cleaned += 1;
-    }
+    await collection.updateOne(
+      { _id: tempUser._id as ObjectId },
+      { $set: { status: 'expired', expiredAt: now } }
+    );
+    cleaned += 1;
   }
 
   return { cleaned };

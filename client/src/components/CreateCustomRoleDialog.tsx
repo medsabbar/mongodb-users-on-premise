@@ -125,6 +125,9 @@ export function CreateCustomRoleDialog({
   const [roleName, setRoleName] = useState("");
   const [rows, setRows] = useState<RowState[]>([createInitialRow()]);
   const [submitting, setSubmitting] = useState(false);
+  const [scopeMode, setScopeMode] = useState<"collection" | "database" | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -147,6 +150,7 @@ export function CreateCustomRoleDialog({
   function reset(): void {
     setRoleName("");
     setRows([createInitialRow()]);
+    setScopeMode(null);
   }
 
   function handleClose(): void {
@@ -276,14 +280,53 @@ export function CreateCustomRoleDialog({
         }
       }
       if (actions.length === 0) continue;
+
+      if (!scopeMode) {
+        onError?.(
+          "Select a privilege scope (Collection Actions or Database Actions and Roles) before adding actions.",
+        );
+        return;
+      }
+
       for (const target of row.targets) {
-        const db = target.anyDb ? "" : target.db.trim();
-        const collection = target.anyCollection ? "" : target.collection.trim();
-        if (!target.anyDb && !db) continue;
-        // Always include a collection specifier to satisfy MongoDB's
-        // resource pattern requirements, even when targeting a database.
-        const resource = { db, collection: collection || "" };
-        privileges.push({ resource, actions });
+        if (scopeMode === "database") {
+          const db = target.anyDb ? "" : target.db.trim();
+          if (!target.anyDb && !db) {
+            onError?.(
+              "For database actions, specify a database name or enable \"Apply to any database\".",
+            );
+            return;
+          }
+          // Database-scoped privileges always target the whole database
+          // (all collections), so we force an empty collection string.
+          const resource = { db, collection: "" };
+          privileges.push({ resource, actions });
+        } else if (scopeMode === "collection") {
+          const db = target.db.trim();
+          if (!db) {
+            onError?.(
+              "For collection actions, a specific database is required.",
+            );
+            return;
+          }
+          if (target.anyDb) {
+            onError?.(
+              "Collection actions cannot use \"Apply to any database\". Choose a specific database.",
+            );
+            return;
+          }
+          const collection = target.anyCollection
+            ? ""
+            : target.collection.trim();
+          if (!target.anyCollection && !collection) {
+            onError?.(
+              "For collection actions, specify a collection name or enable \"Apply to any collection\".",
+            );
+            return;
+          }
+          const resource = { db, collection };
+          privileges.push({ resource, actions });
+        }
       }
     }
     const seenInherited = new Set<string>();
@@ -365,6 +408,43 @@ export function CreateCustomRoleDialog({
                 placeholder="e.g. databaseManager"
                 className="h-8"
               />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2">
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                  Privilege scope
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Choose whether this custom role is defined at the database
+                  level or at the collection level. You cannot mix both in a
+                  single role.
+                </p>
+              </div>
+              <div className="inline-flex rounded-md border border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-700 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setScopeMode("collection")}
+                  className={`px-2.5 py-1.5 border-r border-slate-200 ${
+                    scopeMode === "collection"
+                      ? "bg-emerald-600 text-white"
+                      : "hover:bg-slate-100"
+                  }`}
+                >
+                  Collection Actions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScopeMode("database")}
+                  className={`px-2.5 py-1.5 ${
+                    scopeMode === "database"
+                      ? "bg-emerald-600 text-white"
+                      : "hover:bg-slate-100"
+                  }`}
+                >
+                  Database Actions &amp; Roles
+                </button>
+              </div>
             </div>
 
             <div className="rounded-lg border border-slate-200 bg-slate-50">
@@ -459,8 +539,33 @@ export function CreateCustomRoleDialog({
                                   actionsTree &&
                                   actionsTree.length > 0 &&
                                   (() => {
+                                    if (!scopeMode) {
+                                      return (
+                                        <div className="py-2 text-[11px] text-slate-500">
+                                          Select a privilege scope above to see
+                                          available actions and roles.
+                                        </div>
+                                      );
+                                    }
+
+                                    let sourceTree: ActionsTreeNode[] = [];
+                                    if (scopeMode === "collection") {
+                                      sourceTree =
+                                        actionsTree.filter(
+                                          (n) =>
+                                            n.name === "Collection Actions",
+                                        ) || [];
+                                    } else if (scopeMode === "database") {
+                                      sourceTree =
+                                        actionsTree.filter(
+                                          (n) =>
+                                            n.name ===
+                                            "Database Actions and Roles",
+                                        ) || [];
+                                    }
+
                                     const tree = filterTree(
-                                      actionsTree,
+                                      sourceTree,
                                       row.searchQuery || "",
                                     );
                                     const expandedPaths =
@@ -587,7 +692,9 @@ export function CreateCustomRoleDialog({
                                 <Input
                                   placeholder="Enter a database name"
                                   value={target.db}
-                                  disabled={target.anyDb}
+                                  disabled={
+                                    scopeMode === "database" && target.anyDb
+                                  }
                                   onChange={(e) => {
                                     const newRows = [...rows];
                                     newRows[rowIndex].targets[tIndex].db =
@@ -596,22 +703,25 @@ export function CreateCustomRoleDialog({
                                   }}
                                   className="h-8"
                                 />
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={target.anyDb}
-                                    onChange={(e) => {
-                                      const newRows = [...rows];
-                                      newRows[rowIndex].targets[tIndex].anyDb =
-                                        e.target.checked;
-                                      setRows(newRows);
-                                    }}
-                                    className="h-3 w-3 rounded border-slate-300 bg-white text-emerald-600 focus:ring-0"
-                                  />
-                                  <span className="text-[10px] text-slate-500 uppercase tracking-tighter">
-                                    Apply to any database
-                                  </span>
-                                </label>
+                                {scopeMode === "database" && (
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={target.anyDb}
+                                      onChange={(e) => {
+                                        const newRows = [...rows];
+                                        newRows[rowIndex].targets[
+                                          tIndex
+                                        ].anyDb = e.target.checked;
+                                        setRows(newRows);
+                                      }}
+                                      className="h-3 w-3 rounded border-slate-300 bg-white text-emerald-600 focus:ring-0"
+                                    />
+                                    <span className="text-[10px] text-slate-500 uppercase tracking-tighter">
+                                      Apply to any database
+                                    </span>
+                                  </label>
+                                )}
                               </div>
                               <div className="flex-1 space-y-1">
                                 <Input

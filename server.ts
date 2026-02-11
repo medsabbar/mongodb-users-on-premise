@@ -179,13 +179,37 @@ async function loadUsersWithMetadata(): Promise<{ users: DashboardUser[] }> {
     });
 
     users = (results.users || []).map(
-      (user: { _id: string; customData?: { createdAt?: Date } }): DashboardUser => ({
-        _id: user._id,
-        name: user._id,
-        createdAt: user.customData?.createdAt || 'N/A',
-        isTemporary: !!tempMap.get(user._id),
-        expiresAt: tempMap.get(user._id)?.expiresAt ?? null
-      })
+      (user: {
+        _id: string;
+        user?: string;
+        db?: string;
+        customData?: { createdAt?: Date; isTemporary?: boolean; tempExpiresAt?: Date };
+        roles?: InheritedRole[];
+      }): DashboardUser => {
+        // MongoDB user documents have both `user` (username) and `_id` (db.user).
+        // Temporary user metadata is keyed by the bare username.
+        const username =
+          user.user || (typeof user._id === 'string' ? user._id.split('.')[1] ?? user._id : user._id);
+        const tempMeta = tempMap.get(username);
+
+        // Prefer the MongoDB user document's own customData as the source of truth
+        // for temporary status and expiry, falling back to tempUsers metadata for
+        // older records created before this field existed.
+        const isTemporaryFromCustom = user.customData?.isTemporary === true;
+        const tempExpiresFromCustom = user.customData?.tempExpiresAt ?? null;
+
+        const isTemporary = isTemporaryFromCustom || !!tempMeta;
+        const expiresAt = tempExpiresFromCustom ?? tempMeta?.expiresAt ?? null;
+
+        return {
+          _id: user._id,
+          name: username,
+          createdAt: user.customData?.createdAt || 'N/A',
+          roles: user.roles ?? [],
+          isTemporary,
+          expiresAt
+        };
+      }
     );
   } else if (demoMode) {
     users = demoUsers;
@@ -519,9 +543,38 @@ app.put('/users/update', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const userName = id.split('.')[1];
+
+    // Prevent editing root users; they may only change passwords via the dedicated endpoint
+    const currentDbName = db.databaseName;
+    const userDetailsResult = await db.command({
+      usersInfo: { user: userName, db: currentDbName },
+      showCredentials: false,
+      showCustomData: false,
+      showPrivileges: false,
+      showAuthenticationRestrictions: false
+    });
+
+    if (!userDetailsResult.users || userDetailsResult.users.length === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const userDoc = userDetailsResult.users[0] as { roles?: InheritedRole[] };
+    const isRootUser = userDoc.roles?.some(
+      (role) => role.role === 'root' && role.db === currentDbName
+    );
+
+    if (isRootUser) {
+      res.status(400).json({
+        error: 'Root users cannot be edited. Use the dedicated password change action instead.'
+      });
+      return;
+    }
+
     // Check if user already exists for other users
     const existingUser = await db.command({
-      usersInfo: { user: id.split('.')[1], db: db.databaseName }
+      usersInfo: { user: userName, db: db.databaseName }
     });
     if ((existingUser.users || []).length > 0 && existingUser.users[0]._id !== id) {
       res.status(400).json({ error: 'User with this name already exists' });
@@ -529,7 +582,7 @@ app.put('/users/update', async (req: Request, res: Response): Promise<void> => {
     }
 
     const updateData: { name: string; password?: string; roles?: InheritedRole[] } = {
-      name: id.split('.')[1]
+      name: userName
     };
     if (password) {
       try {
@@ -560,6 +613,74 @@ app.put('/users/update', async (req: Request, res: Response): Promise<void> => {
     console.error('Error updating user:', error);
     const message = error instanceof Error ? error.message : String(error);
     res.status(500).json({ error: 'Failed to update user: ' + message });
+  }
+});
+
+// Update user password (separate action)
+app.put('/users/password', async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!isConnected && !demoMode) {
+      res.status(400).json({ error: 'Not connected to database' });
+      return;
+    }
+
+    const { id, password } = req.body as {
+      id?: string;
+      password?: string;
+    };
+
+    if (!id || !password) {
+      res.status(400).json({ error: 'User ID and password are required' });
+      return;
+    }
+
+    if (demoMode) {
+      res.json({
+        success: true,
+        message: 'Password updated successfully (demo mode)'
+      });
+      return;
+    }
+
+    if (!db) {
+      res.status(400).json({ error: 'Not connected to database' });
+      return;
+    }
+
+    try {
+      validatePasswordCharacters(password);
+    } catch (validationError) {
+      const message =
+        validationError instanceof Error ? validationError.message : String(validationError);
+      res.status(400).json({ error: message });
+      return;
+    }
+
+    const userName = id.split('.')[1];
+
+    if (!userName) {
+      res.status(400).json({ error: 'Invalid user ID format' });
+      return;
+    }
+
+    // Ensure user exists before updating
+    const existingUser = await db.command({
+      usersInfo: { user: userName, db: db.databaseName }
+    });
+
+    if (!existingUser.users || existingUser.users.length === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    await updateUser(uri, db, { name: userName, password });
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error updating user password:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ error: 'Failed to update user password: ' + message });
   }
 });
 

@@ -17,12 +17,16 @@ interface UsersTableProps {
   users: ApiUser[];
   onDelete: (user: ApiUser) => void;
   onInspect: (user: ApiUser) => void;
+  onEdit: (user: ApiUser) => void;
+  onChangePassword: (user: ApiUser) => void;
 }
 
 export function UsersTable({
   users,
   onDelete,
   onInspect,
+  onEdit,
+  onChangePassword,
 }: UsersTableProps): ReactElement {
   if (!users.length) {
     return (
@@ -53,6 +57,9 @@ export function UsersTable({
         <tbody>
           {users.map((user, idx) => {
             const isTemp = user.isTemporary;
+            const isRoot = (user.roles || []).some(
+              (role) => role.role === "root" && role.db === "admin",
+            );
             const createdLabel =
               user.createdAt && user.createdAt !== "N/A"
                 ? new Date(user.createdAt).toLocaleDateString()
@@ -102,14 +109,34 @@ export function UsersTable({
                     >
                       Privileges
                     </Button>
+                    {!isRoot && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="xs"
+                        onClick={() => onEdit(user)}
+                      >
+                        Edit
+                      </Button>
+                    )}
                     <Button
                       type="button"
-                      variant="destructive"
+                      variant="outline"
                       size="xs"
-                      onClick={() => onDelete(user)}
+                      onClick={() => onChangePassword(user)}
                     >
-                      Delete
+                      Password
                     </Button>
+                    {!isRoot && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="xs"
+                        onClick={() => onDelete(user)}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

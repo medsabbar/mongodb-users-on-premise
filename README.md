@@ -162,6 +162,31 @@ From the **Users** section of the dashboard you can:
 
 You can also fetch effective privileges for a specific user to understand what they can do in the cluster.
 
+### Temporary users & TTL on `system.users`
+
+Temporary users are created with additional metadata on the MongoDB user document:
+
+- `customData.isTemporary: true`
+- `customData.tempExpiresAt: <Date>` – the absolute expiry timestamp
+
+If you want MongoDB itself to delete temporary users automatically, you can create a TTL index on the `system.users` collection in the `admin` database:
+
+```js
+use admin
+db.system.users.createIndex(
+  { "customData.tempExpiresAt": 1 },
+  {
+    expireAfterSeconds: 0,
+    partialFilterExpression: { "customData.tempExpiresAt": { $exists: true } }
+  }
+)
+```
+
+- Only users with `customData.tempExpiresAt` set will be subject to this TTL.
+- The TTL monitor runs roughly once per minute, so deletion happens shortly after the expiry time, not exactly at it.
+
+The separate `admin.tempUsers` collection is used for auditing/history of temporary accounts and can keep records even after the backing MongoDB user has been removed.
+
 ### Managing roles
 
 From the **Roles** section of the dashboard you can:
@@ -192,6 +217,9 @@ Key endpoints exposed by the backend:
 - `POST /roles/custom` – Create a custom role.
 - `PUT /roles/custom/:roleName` – Update a custom role.
 - `DELETE /roles/custom/:roleName` – Delete a custom role.
+
+For details on backfilling temporary user metadata into existing MongoDB users,
+see `docs/temporary-users-migration.md`.
 
 ## Development notes
 
