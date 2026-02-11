@@ -9,16 +9,24 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
 
-# Copy package.json and package-lock.json first for better caching
+# Copy root package.json/package-lock.json and backend sources
 COPY package*.json ./
+COPY tsconfig.backend.json ./
+COPY server.ts ./server.ts
+COPY lib ./lib
 
-# Install dependencies
-# Using npm ci for faster, reliable, reproducible builds
-RUN npm ci --only=production && \
+# Install all dependencies (including TypeScript for build)
+RUN npm install && \
     npm cache clean --force
 
-# Copy the application code
-COPY . .
+# Copy client app and install its dependencies, then build full app (server + client)
+COPY client ./client
+RUN cd client && npm install
+RUN npm run build
+
+# Copy remaining application files (public assets, init scripts, etc.)
+COPY public ./public
+COPY init-mongo.js ./init-mongo.js
 
 # Change ownership of the app directory to the nodejs user
 RUN chown -R nextjs:nodejs /app

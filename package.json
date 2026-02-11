@@ -2,17 +2,35 @@
   "name": "mongodb-usermanagement",
   "version": "1.0.0",
   "description": "Single-file MongoDB user management application",
-  "main": "server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node dist/server.js",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "concurrently \"tsc -p tsconfig.backend.json --watch\" \"nodemon dist/server.js\"",
+    "dev:client": "npm run dev --prefix client",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "tsc -p tsconfig.backend.json",
+    "build:client": "npm run build --prefix client"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "ejs": "^3.1.9",
     "mongodb": "^6.0.0"
   },
-  "keywords": ["mongodb", "user-management", "express", "ejs"],
+  "keywords": [
+    "mongodb",
+    "user-management",
+    "express"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "LGPL-3.0-or-later",
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "@types/express": "^4.17.21",
+    "@types/mongodb": "^4.0.7",
+    "@types/node": "^20.17.10",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
 }
