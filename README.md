@@ -1,6 +1,10 @@
-# MongoDB User Management Dashboard
+# MongoDB Users On-Premise
 
-An Express + React application for managing MongoDB users and roles with built-in URI validation, temporary users, and a modern web dashboard.
+Self-hosted web dashboard for managing **MongoDB users, roles, and privileges** on on‑premise MongoDB clusters.
+
+- **Use cases**: MongoDB RBAC administration, on‑premise cluster management, temporary users, custom roles.
+- **Tech stack**: Node.js, Express, TypeScript, React, Vite, Tailwind CSS.
+- **Deployment**: Runs alongside your MongoDB deployment as a small admin service.
 
 ## Features
 
